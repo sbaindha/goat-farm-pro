@@ -1,0 +1,288 @@
+{% extends "farm/base.html" %}
+
+{% block content %}
+<h1>📚 API Documentation - API डॉक्यूमेंटेशन</h1>
+
+<div class="card">
+    <h2>🎯 Django Ninja API Overview</h2>
+    <p>यह एक <span class="highlight">complete REST API</span> है जो 30 models के लिए CRUD operations प्रदान करता है।</p>
+    <p><strong>Base URL:</strong> <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 3px;">/api/</code></p>
+    <p><strong>Total Endpoints:</strong> <span class="highlight">{{ total_endpoints }}+</span></p>
+</div>
+
+<div class="card">
+    <h2>🔑 Authentication</h2>
+    <p>यह version में सभी endpoints public हैं। Production में JWT या Token authentication add कर सकते हैं।</p>
+</div>
+
+{% for section in api_endpoints %}
+<div class="card">
+    <h2>{{ section.name }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Endpoint</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for endpoint in section.endpoints %}
+            <tr>
+                <td><code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 3px;">{{ endpoint|truncatechars:60 }}</code></td>
+                <td>
+                    {% if "List" in endpoint %}
+                        <span class="badge badge-success">GET</span>
+                    {% elif "Create" in endpoint %}
+                        <span class="badge badge-warning">POST</span>
+                    {% elif "Update" in endpoint %}
+                        <span class="badge badge-warning">PUT</span>
+                    {% elif "Delete" in endpoint %}
+                        <span class="badge badge-danger">DELETE</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+<div class="card">
+    <h2>📝 Request/Response Examples</h2>
+    <h3>Create Goat - बकरी बनाएं</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+<strong>POST /api/goats/</strong>
+{
+  "tag_number": "G001",
+  "name": "Laila",
+  "breed": "saanen",
+  "gender": "F",
+  "color": "White",
+  "date_of_birth": "2024-01-15",
+  "weight": 45.5,
+  "purchase_date": "2024-01-15",
+  "purchase_price": 5000,
+  "status": "A"
+}
+    </pre>
+
+    <h3>Get Goats - बकरियां प्राप्त करें</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+<strong>GET /api/goats/?search=Laila</strong>
+[
+  {
+    "id": 1,
+    "tag_number": "G001",
+    "name": "Laila",
+    "breed": "saanen",
+    "status": "A",
+    ...
+  }
+]
+    </pre>
+
+    <h3>Create Milk Record - दूध रिकॉर्ड बनाएं</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+<strong>POST /api/milk/</strong>
+{
+  "goat_id": 1,
+  "date": "2026-02-17",
+  "session": "M",
+  "quantity": 2.5,
+  "fat_percentage": 4.2
+}
+    </pre>
+
+    <h3>Create Sale - बिक्रय बनाएं</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+<strong>POST /api/sales/</strong>
+{
+  "sale_type": "M",
+  "date": "2026-02-17",
+  "quantity": 100,
+  "unit": "liter",
+  "price_per_unit": 150,
+  "total_amount": 15000,
+  "buyer_name": "Local Dairy",
+  "payment_status": "P"
+}
+    </pre>
+
+    <h3>Dashboard Statistics - डैशबोर्ड आंकड़े</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+<strong>GET /api/stats/dashboard/</strong>
+{
+  "total_goats": 50,
+  "active_goats": 48,
+  "pregnant_goats": 5,
+  "total_sales": 200,
+  "total_expenses": 150,
+  "total_milk_production": 500.5,
+  "total_revenue": 75000
+}
+    </pre>
+</div>
+
+<div class="card">
+    <h2>🛠️ Query Parameters</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>search</td>
+                <td>string</td>
+                <td>Goats में search करें</td>
+                <td><code>/api/goats/?search=Laila</code></td>
+            </tr>
+            <tr>
+                <td>status</td>
+                <td>string</td>
+                <td>Status के अनुसार filter</td>
+                <td><code>/api/goats/?status=A</code></td>
+            </tr>
+            <tr>
+                <td>date_from</td>
+                <td>date</td>
+                <td>Start date (YYYY-MM-DD)</td>
+                <td><code>/api/milk/?date_from=2026-01-01</code></td>
+            </tr>
+            <tr>
+                <td>date_to</td>
+                <td>date</td>
+                <td>End date (YYYY-MM-DD)</td>
+                <td><code>/api/milk/?date_to=2026-02-17</code></td>
+            </tr>
+            <tr>
+                <td>goat_id</td>
+                <td>integer</td>
+                <td>Specific goat के लिए filter</td>
+                <td><code>/api/milk/?goat_id=1</code></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>📊 Available Models & Endpoints</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Model</th>
+                <th>Hindi Name</th>
+                <th>Endpoints</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Goat</td>
+                <td>बकरी</td>
+                <td>GET, POST, PUT, DELETE</td>
+            </tr>
+            <tr>
+                <td>BreedingRecord</td>
+                <td>प्रजनन रिकॉर्ड</td>
+                <td>GET, POST, PUT</td>
+            </tr>
+            <tr>
+                <td>HealthRecord</td>
+                <td>स्वास्थ्य रिकॉर्ड</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>MilkProduction</td>
+                <td>दूध उत्पादन</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>Sale</td>
+                <td>बिक्रय</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>Expense</td>
+                <td>खर्च</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>WeatherRecord</td>
+                <td>मौसम रिकॉर्ड</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>MarketPrice</td>
+                <td>बाजार मूल्य</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>PerformanceEvaluation</td>
+                <td>प्रदर्शन मूल्यांकन</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td>BreedingPlan</td>
+                <td>प्रजनन योजना</td>
+                <td>GET, POST</td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 1rem;"><strong>और 20+ अन्य models...</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>💡 Integration Examples</h2>
+    
+    <h3>JavaScript/Fetch</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+// Get all goats
+fetch('/api/goats/')
+  .then(res => res.json())
+  .then(data => console.log(data))
+
+// Create new milk record
+fetch('/api/milk/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    goat_id: 1,
+    date: '2026-02-17',
+    session: 'M',
+    quantity: 2.5
+  })
+})
+    </pre>
+
+    <h3>Python/Requests</h3>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px; overflow-x: auto;">
+import requests
+
+# Get goats
+response = requests.get('http://localhost:8000/api/goats/')
+goats = response.json()
+
+# Create sale
+requests.post('http://localhost:8000/api/sales/', json={
+    'sale_type': 'M',
+    'date': '2026-02-17',
+    'quantity': 100,
+    'unit': 'liter',
+    'price_per_unit': 150,
+    'total_amount': 15000,
+    'buyer_name': 'Dairy Co'
+})
+    </pre>
+</div>
+
+<div class="success-msg">
+    <strong>✅ API Ready!</strong> सभी endpoints ready हैं और आप उन्हें अभी use कर सकते हैं।
+</div>
+
+{% endblock %}

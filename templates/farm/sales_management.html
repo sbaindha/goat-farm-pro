@@ -1,0 +1,131 @@
+{% extends 'farm/base.html' %}
+{% block title %}Sales — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>💰 बिक्रय प्रबंधन</span><span class='en-only'>💰 Sales Management</span>{% endblock %}
+{% block page_breadcrumb %}<span class='hi-only'>बिक्रय</span><span class='en-only'>sales</span>{% endblock %}
+{% block nav_sales %}active{% endblock %}
+
+{% block page_sub %}<span class='hi-only'>बकरी, दूध और अन्य बिक्रय</span><span class='en-only'>Goat, milk & other sales</span>{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="document.getElementById('saleModal').classList.add('open')">+ <span class='hi-only'>बिक्रय जोड़ें</span><span class='en-only'>Add Sale</span></button>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:22px;">
+    <div class="stat-card green"><div class="stat-icon-wrap">💰</div><div class="stat-value" id="sc-revenue">₹0</div><div class="stat-label">Total Revenue</div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">🐐</div><div class="stat-value" id="sc-goat">—</div><div class="stat-label">Goat Sales</div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">🥛</div><div class="stat-value" id="sc-milk">—</div><div class="stat-label">Milk Sales</div></div>
+    <div class="stat-card teal"><div class="stat-icon-wrap">✅</div><div class="stat-value" id="sc-paid">—</div><div class="stat-label">Paid</div></div>
+</div>
+
+<div class="card" style="padding:0;">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Type</th><th>Date</th><th>Buyer</th><th>Qty / Unit</th><th>Price/Unit</th><th>Total</th><th>Payment</th></tr></thead>
+            <tbody id="salesBody"><tr><td colspan="7" style="padding:30px;text-align:center;"><div class="loading-dots" style="display:inline-flex;gap:6px;"><span></span><span></span><span></span></div></td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="saleModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">💰 Add Sale</div>
+            <button class="modal-close" onclick="document.getElementById('saleModal').classList.remove('open')">✕</button>
+        </div>
+        <form onsubmit="submitSale(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group"><label class="form-label">Sale Type *</label>
+                    <select class="form-select" id="s-type">
+                        <option value="G">🐐 Goat</option><option value="M">🥛 Milk</option>
+                        <option value="MN">♻️ Manure</option><option value="O">📦 Other</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="s-date" required></div>
+                <div class="form-group"><label class="form-label">Buyer Name *</label><input class="form-input" id="s-buyer" required></div>
+                <div class="form-group"><label class="form-label">Buyer Contact</label><input class="form-input" id="s-contact"></div>
+                <div class="form-group"><label class="form-label">Quantity *</label><input class="form-input" type="number" id="s-qty" step="0.01" min="0" required></div>
+                <div class="form-group"><label class="form-label">Unit *</label><input class="form-input" id="s-unit" placeholder="kg / litre / head" required></div>
+                <div class="form-group"><label class="form-label">Price per Unit (₹) *</label><input class="form-input" type="number" id="s-ppu" step="0.01" min="0" required oninput="calcTotal()"></div>
+                <div class="form-group"><label class="form-label">Total (₹)</label><input class="form-input" type="number" id="s-total" step="0.01" min="0" required></div>
+                <div class="form-group"><label class="form-label">Payment Status</label>
+                    <select class="form-select" id="s-payment">
+                        <option value="P">✅ Paid</option><option value="UP">❌ Unpaid</option><option value="PA">🔄 Partial</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('saleModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Sale</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+const ST  = {G:'🐐 Goat', M:'🥛 Milk', MN:'♻️ Manure', O:'📦 Other'};
+const PMB = {P:'badge-green', UP:'badge-red', PA:'badge-amber'};
+const PML = {P:'Paid', UP:'Unpaid', PA:'Partial'};
+
+function calcTotal() {
+    const qty = parseFloat(document.getElementById('s-qty').value) || 0;
+    const ppu = parseFloat(document.getElementById('s-ppu').value) || 0;
+    document.getElementById('s-total').value = (qty * ppu).toFixed(2);
+}
+document.getElementById('s-qty').addEventListener('input', calcTotal);
+
+function loadSales() {
+    fetch(API + '/sales/')
+        .then(r => r.json())
+        .then(data => {
+            const total = data.reduce((s, r) => s + r.total_amount, 0);
+            document.getElementById('sc-revenue').textContent = '₹' + (total >= 1000 ? (total/1000).toFixed(1) + 'k' : total.toFixed(0));
+            document.getElementById('sc-goat').textContent    = data.filter(r => r.sale_type === 'G').length;
+            document.getElementById('sc-milk').textContent    = data.filter(r => r.sale_type === 'M').length;
+            document.getElementById('sc-paid').textContent    = data.filter(r => r.payment_status === 'P').length;
+            const tbody = document.getElementById('salesBody');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-dim);">No sales yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(r => `<tr>
+                <td>${ST[r.sale_type] || r.sale_type}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">${r.date}</td>
+                <td>${r.buyer_name}</td>
+                <td style="font-family:'JetBrains Mono',monospace;">${r.quantity} ${r.unit}</td>
+                <td style="font-family:'JetBrains Mono',monospace;">₹${r.price_per_unit}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">₹${r.total_amount}</td>
+                <td><span class="badge ${PMB[r.payment_status]||'badge-gray'}">${PML[r.payment_status]||r.payment_status}</span></td>
+            </tr>`).join('');
+        })
+        .catch(() => { document.getElementById('salesBody').innerHTML = '<tr><td colspan="7" style="color:var(--danger);text-align:center;padding:20px;">Error loading</td></tr>'; });
+}
+
+async function submitSale(e) {
+    e.preventDefault();
+    const payload = {
+        sale_type: document.getElementById('s-type').value,
+        date: document.getElementById('s-date').value,
+        buyer_name: document.getElementById('s-buyer').value,
+        buyer_contact: document.getElementById('s-contact').value,
+        quantity: parseFloat(document.getElementById('s-qty').value),
+        unit: document.getElementById('s-unit').value,
+        price_per_unit: parseFloat(document.getElementById('s-ppu').value),
+        total_amount: parseFloat(document.getElementById('s-total').value),
+        payment_status: document.getElementById('s-payment').value,
+    };
+    try {
+        const res = await fetch(`${API}/sales/`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('✅ Sale recorded!');
+        document.getElementById('saleModal').classList.remove('open');
+        loadSales();
+    } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+document.getElementById('saleModal').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); });
+window.addEventListener('DOMContentLoaded', loadSales);
+{% endblock %}

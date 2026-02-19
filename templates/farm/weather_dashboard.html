@@ -1,0 +1,644 @@
+{% extends 'farm/base.html' %}
+{% block title %}Weather Dashboard — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>🌦️ मौसम डैशबोर्ड</span><span class='en-only'>🌦️ Weather Dashboard</span>{% endblock %}
+{% block page_sub %}<span class='hi-only'>अपने फार्म के लिए मौसम जानकारी</span><span class='en-only'>Live weather intelligence for your farm</span>{% endblock %}
+{% block page_breadcrumb %}weather{% endblock %}
+{% block nav_weather %}active{% endblock %}
+
+{% block extra_css %}
+/* ── HERO ── */
+.weather-hero {
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+}
+.weather-hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(74,222,128,0.1), transparent 70%);
+    pointer-events: none;
+}
+.wh-top {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+.wh-temp {
+    font-size: 5.5rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+    letter-spacing: -4px;
+    line-height: 1;
+}
+.wh-icon { font-size: 2rem; margin-bottom: 6px; }
+.wh-condition { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.wh-location { font-size: 0.82rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.wh-sunrise-set { text-align: right; font-family: 'JetBrains Mono', monospace; }
+.sun-item { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 5px; }
+.sun-item span { color: var(--text); font-weight: 600; }
+
+/* ── METRICS ── */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+    transition: all var(--transition);
+    cursor: default;
+}
+.metric-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.metric-icon { font-size: 1.4rem; margin-bottom: 5px; }
+.metric-val { font-size: 1.05rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; margin-bottom: 3px; }
+.metric-label { font-size: 0.63rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── FORECAST ── */
+.forecast-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; }
+.forecast-day {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 6px;
+    text-align: center;
+    transition: all var(--transition);
+    cursor: pointer;
+    position: relative;
+}
+.forecast-day:hover, .forecast-day.selected {
+    border-color: var(--primary);
+    background: var(--primary-glow);
+}
+.forecast-day.today { border-color: var(--primary); }
+.forecast-day-name { font-size: 0.62rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+.forecast-date-num { font-size: 0.68rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+.forecast-ico { font-size: 1.5rem; margin-bottom: 6px; }
+.forecast-high { font-size: 0.92rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.forecast-low  { font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.forecast-rain-bar { height: 3px; border-radius: 2px; background: var(--blue); margin-top: 6px; transition: width 0.3s; }
+.forecast-rain-pct { font-size: 0.6rem; color: var(--blue); margin-top: 3px; }
+
+/* ── HOURLY CHART ── */
+.hourly-scroll { overflow-x: auto; padding-bottom: 4px; }
+.hourly-track { display: flex; gap: 8px; min-width: max-content; padding: 4px 2px; }
+.hourly-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    text-align: center;
+    min-width: 70px;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+.hourly-item:hover { border-color: var(--primary); }
+.hourly-time { font-size: 0.65rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+.hourly-ico  { font-size: 1.1rem; margin-bottom: 4px; }
+.hourly-temp { font-size: 0.88rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.hourly-hum  { font-size: 0.62rem; color: var(--blue); margin-top: 2px; }
+
+/* ── ALERTS ── */
+.alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.82rem; margin-bottom: 8px; }
+.alert-critical { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+.alert-warning  { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+.alert-info     { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+.alert-ok       { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25); color: #86efac; }
+
+/* ── RISK CARDS ── */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.risk-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+.risk-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.risk-card.high::before   { background: var(--danger); }
+.risk-card.medium::before { background: var(--amber); }
+.risk-card.low::before    { background: var(--primary); }
+.risk-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.risk-name { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.risk-badge { font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+.risk-badge.high   { background: rgba(239,68,68,0.15);  color: var(--danger); }
+.risk-badge.medium { background: rgba(245,158,11,0.15); color: var(--amber); }
+.risk-badge.low    { background: rgba(74,222,128,0.12); color: var(--primary); }
+.risk-icon { font-size: 1.8rem; margin-bottom: 6px; }
+.risk-desc { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
+
+/* ── FARM CALENDAR ── */
+.cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.cal-item { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: flex; gap: 12px; align-items: flex-start; }
+.cal-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.cal-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.cal-desc  { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+.cal-day   { font-size: 0.65rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+
+/* ── CARD TITLE ── */
+.card-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title-left { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 768px) {
+    .wh-top { grid-template-columns: 1fr !important; }
+    .wh-sunrise-set { text-align: left; }
+    .forecast-grid { grid-template-columns: repeat(5, 1fr) !important; }
+}
+{% endblock %}
+
+{% block page_actions %}
+<button onclick="manualRefresh()" class="btn btn-outline" id="refreshBtn">🔄 <span class='hi-only'>रिफ्रेश</span><span class='en-only'>Refresh</span></button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Loading -->
+<div id="weatherLoading" style="padding:60px;text-align:center;">
+    <div class="loading-dots" style="justify-content:center;display:inline-flex;gap:6px;"><span></span><span></span><span></span></div>
+    <div style="margin-top:12px;color:var(--text-muted);font-size:0.85rem;"><span class='hi-only'>फार्म का मौसम लोड हो रहा है...</span><span class='en-only'>Loading farm weather data...</span></div>
+</div>
+
+<!-- Demo Banner -->
+<div id="demo-banner" style="display:none;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px 16px;margin-bottom:14px;color:#fcd34d;font-size:0.82rem;display:none;align-items:center;gap:10px;">
+    ⚠️ <strong>Demo Mode</strong> — Real data ke liye <code>WEATHER_API_KEY</code> set karein
+    (<a href="https://www.visualcrossing.com/weather-api" target="_blank" style="color:#fbbf24;">Free API key →</a>)
+</div>
+
+<!-- Main Content -->
+<div id="weatherContent" style="display:none;">
+
+    <!-- HERO -->
+    <div class="weather-hero">
+        <div class="wh-top">
+            <div>
+                <div class="wh-temp" id="wh-temp">--°</div>
+            </div>
+            <div>
+                <div class="wh-icon" id="wh-icon">🌤️</div>
+                <div class="wh-condition" id="wh-condition">Loading...</div>
+                <div class="wh-location" id="wh-location">📍 Detecting...</div>
+                <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <span class="badge badge-green" id="wh-feelslike">Feels like --°</span>
+                    <span class="badge badge-blue" id="wh-updated">--</span>
+                    <span class="badge badge-gray" id="wh-humidity-badge">💧 --%</span>
+                </div>
+            </div>
+            <div class="wh-sunrise-set">
+                <div class="sun-item">🌅 <span class='hi-only'>सूर्योदय:</span><span class='en-only'>Sunrise:</span> <span id="wh-sunrise">--</span></div>
+                <div class="sun-item">🌇 <span class='hi-only'>सूर्यास्त:</span><span class='en-only'>Sunset:</span> <span id="wh-sunset">--</span></div>
+                <div class="sun-item" style="margin-top:8px;">☀️ UV: <span id="wh-uv">--</span></div>
+                <div class="sun-item">💨 <span id="wh-wind-hero">-- km/h</span></div>
+                <div class="sun-item">🌧️ Rain: <span id="wh-precip">--%</span></div>
+            </div>
+        </div>
+        <div class="metrics-grid" id="metricsGrid"></div>
+    </div>
+
+    <!-- 10-DAY FORECAST -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">
+            <div class="card-title-left">📅 <span class='hi-only'>10 दिन का पूर्वानुमान</span><span class='en-only'>10-Day Forecast</span></div>
+        </div>
+        <div style="padding:14px;">
+            <div class="forecast-grid" id="forecastGrid">
+                <div class="loading-dots" style="display:inline-flex;gap:6px;grid-column:1/-1;padding:20px 0;"><span></span><span></span><span></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOURLY FORECAST -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">
+            <div class="card-title-left">⏰ <span class='hi-only'>आज का प्रति घंटा पूर्वानुमान</span><span class='en-only'>Today's Hourly Forecast</span></div>
+        </div>
+        <div style="padding:14px;">
+            <div class="hourly-scroll">
+                <div class="hourly-track" id="hourlyTrack">
+                    <div style="color:var(--text-dim);font-size:0.82rem;padding:10px;">Loading hourly data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERTS + HEALTH TIPS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card">
+            <div class="card-title"><div class="card-title-left">🚨 <span class='hi-only'>फार्म अलर्ट</span><span class='en-only'>Farm Alerts</span></div></div>
+            <div style="padding:14px;" id="alertsSection"></div>
+        </div>
+        <div class="card">
+            <div class="card-title"><div class="card-title-left">🐐 <span class='hi-only'>बकरी स्वास्थ्य टिप्स</span><span class='en-only'>Goat Health Tips</span></div></div>
+            <div style="padding:14px;" id="healthTips"></div>
+        </div>
+    </div>
+
+    <!-- DISEASE RISK -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="card-title"><div class="card-title-left">🦠 <span class='hi-only'>रोग जोखिम आकलन</span><span class='en-only'>Disease Risk Assessment</span></div></div>
+        <div style="padding:14px;">
+            <div class="risk-grid" id="riskGrid"></div>
+        </div>
+    </div>
+
+    <!-- FARMING CALENDAR -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="card-title"><div class="card-title-left">📋 <span class='hi-only'>मौसम आधारित फार्म कैलेंडर</span><span class='en-only'>Weather-Based Farm Calendar</span></div></div>
+        <div style="padding:14px;">
+            <div class="cal-grid" id="farmCalendar"></div>
+        </div>
+    </div>
+
+    <!-- WIND + RAIN SUMMARY -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card">
+            <div class="card-title"><div class="card-title-left">💨 <span class='hi-only'>हवा विश्लेषण</span><span class='en-only'>Wind Analysis</span></div></div>
+            <div style="padding:14px;" id="windAnalysis"></div>
+        </div>
+        <div class="card">
+            <div class="card-title"><div class="card-title-left">🌧️ <span class='hi-only'>वर्षा सारांश</span><span class='en-only'>Rain Summary (10 Days)</span></div></div>
+            <div style="padding:14px;" id="rainSummary"></div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+@media(max-width:768px){
+    .wh-top{grid-template-columns:1fr!important}
+    .wh-sunrise-set{text-align:left}
+    .forecast-grid{grid-template-columns:repeat(5,1fr)!important}
+    div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+let _savedLat = null, _savedLng = null;
+let _allForecast = [];
+
+function conditionIcon(cond) {
+    if (!cond) return '🌤️';
+    const c = cond.toLowerCase();
+    if (c.includes('thunder') || c.includes('storm')) return '⛈️';
+    if (c.includes('snow'))  return '❄️';
+    if (c.includes('sleet')) return '🌨️';
+    if (c.includes('rain') || c.includes('shower') || c.includes('drizzle')) return '🌧️';
+    if (c.includes('fog')  || c.includes('mist'))  return '🌫️';
+    if (c.includes('overcast')) return '☁️';
+    if (c.includes('cloud') || c.includes('partly')) return '⛅';
+    if (c.includes('clear') || c.includes('sun'))   return '☀️';
+    return '🌤️';
+}
+
+function getWindDir(deg) {
+    if (deg == null) return 'N';
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(deg / 22.5) % 16];
+}
+
+function getDewPoint(temp, humidity) {
+    const a = 17.27, b = 237.7;
+    const alpha = ((a * temp) / (b + temp)) + Math.log(humidity / 100);
+    return (b * alpha / (a - alpha)).toFixed(1);
+}
+
+function getWindComfort(speed) {
+    if (speed < 5)  return { label: 'Calm', color: 'var(--primary)' };
+    if (speed < 15) return { label: 'Gentle', color: 'var(--primary)' };
+    if (speed < 25) return { label: 'Moderate', color: 'var(--amber)' };
+    if (speed < 40) return { label: 'Strong', color: 'var(--danger)' };
+    return { label: 'Storm', color: 'var(--danger)' };
+}
+
+function renderWeather(data) {
+    document.getElementById('weatherLoading').style.display = 'none';
+    document.getElementById('weatherContent').style.display = 'block';
+
+    const temp     = data.temperature ?? 28;
+    const humidity = data.humidity    ?? 65;
+    const wind     = data.wind        ?? 10;
+
+    // Demo banner
+    if (data.is_demo) document.getElementById('demo-banner').style.display = 'flex';
+
+    // Hero
+    document.getElementById('wh-icon').textContent      = conditionIcon(data.condition);
+    document.getElementById('wh-temp').textContent      = Math.round(temp) + '°C';
+    document.getElementById('wh-condition').textContent = data.condition || 'Clear';
+    document.getElementById('wh-location').textContent  = '📍 ' + (data.location || 'Farm Location');
+    document.getElementById('wh-feelslike').textContent = '🌡️ Feels like ' + Math.round(data.feels_like ?? temp) + '°C';
+    document.getElementById('wh-humidity-badge').textContent = '💧 ' + Math.round(humidity) + '%';
+    document.getElementById('wh-sunrise').textContent   = data.sunrise || '--';
+    document.getElementById('wh-sunset').textContent    = data.sunset  || '--';
+    document.getElementById('wh-uv').textContent        = data.uv_index ?? '--';
+    document.getElementById('wh-wind-hero').textContent = wind + ' km/h ' + getWindDir(data.wind_dir);
+    document.getElementById('wh-precip').textContent    = (data.precip_probability ?? data.rain ?? 0) + '%';
+
+    const isDemo = data.is_demo;
+    const ageMin = data.data_age_min;
+    let liveLabel = isDemo ? '⚠️ Demo' : (ageMin < 16 ? '● Live' : '⏱ ' + ageMin + 'm ago');
+    document.getElementById('wh-updated').textContent = liveLabel + ' · ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+    // Metrics
+    const dewPt = getDewPoint(temp, humidity);
+    const windC = getWindComfort(wind);
+    const metrics = [
+        { icon:'💧', val: Math.round(humidity) + '%',           label:'Humidity' },
+        { icon:'💨', val: wind + ' km/h',                       label:'Wind Speed' },
+        { icon:'🧭', val: getWindDir(data.wind_dir),            label:'Wind Dir' },
+        { icon:'👁️', val: (data.visibility ?? '--') + ' km',    label:'Visibility' },
+        { icon:'🔽', val: (data.pressure ?? '--') + ' mb',      label:'Pressure' },
+        { icon:'🌫️', val: dewPt + '°C',                         label:'Dew Point' },
+        { icon:'☀️', val: data.uv_index ?? '--',                 label:'UV Index' },
+        { icon:'🌧️', val: (data.precip_probability ?? data.rain ?? 0) + '%', label:'Rain Chance' },
+        { icon:'🌡️', val: Math.round(data.feels_like ?? temp) + '°C', label:'Feels Like' },
+        { icon:'💨', val: windC.label,                          label:'Wind Comfort' },
+    ];
+    document.getElementById('metricsGrid').innerHTML = metrics.map(m => `
+        <div class="metric-card">
+            <div class="metric-icon">${m.icon}</div>
+            <div class="metric-val">${m.val}</div>
+            <div class="metric-label">${m.label}</div>
+        </div>`).join('');
+
+    // Alerts
+    const alerts = [];
+    if (temp > 40) alerts.push({ type:'alert-critical', icon:'🔥', text:'Extreme heat! Immediate shade & water needed for all goats.' });
+    else if (temp > 35) alerts.push({ type:'alert-critical', icon:'🔥', text:'Very high temperature. Provide extra water & shade immediately.' });
+    else if (temp > 30) alerts.push({ type:'alert-warning', icon:'🌡️', text:'High temp. Monitor goats for heat stress signs.' });
+    if (temp < 5) alerts.push({ type:'alert-critical', icon:'❄️', text:'Freezing conditions! Keep newborns & pregnant does warm.' });
+    else if (temp < 12) alerts.push({ type:'alert-warning', icon:'🥶', text:'Cold weather. Add extra bedding, especially for kids.' });
+    if (humidity > 85) alerts.push({ type:'alert-critical', icon:'💧', text:'Extreme humidity — very high risk of hoof rot & respiratory disease.' });
+    else if (humidity > 75) alerts.push({ type:'alert-warning', icon:'💧', text:'High humidity. Increase pen ventilation.' });
+    if (wind > 40) alerts.push({ type:'alert-critical', icon:'🌪️', text:'Storm-force winds! Secure all structures and shelter animals.' });
+    else if (wind > 25) alerts.push({ type:'alert-warning', icon:'💨', text:'Strong winds. Check pen roofing and windbreaks.' });
+    const uvIdx = data.uv_index ?? 0;
+    if (uvIdx >= 8) alerts.push({ type:'alert-warning', icon:'☀️', text:'Very high UV index. Ensure shade is available throughout the day.' });
+    if (alerts.length === 0) alerts.push({ type:'alert-ok', icon:'✅', text:'No weather alerts. Conditions are good for farm activities today.' });
+
+    document.getElementById('alertsSection').innerHTML = alerts.map(a =>
+        `<div class="alert-item ${a.type}"><span style="font-size:1.1rem;flex-shrink:0;">${a.icon}</span><span>${a.text}</span></div>`
+    ).join('');
+
+    // Health Tips
+    const tips = [];
+    if (temp > 35) tips.push({ icon:'🥤', text:'Increase water sources — goats need 4-5L/day in extreme heat.' });
+    else if (temp > 28) tips.push({ icon:'🌿', text:'Provide shaded areas during peak afternoon hours (12–4 PM).' });
+    if (temp < 10) tips.push({ icon:'🔥', text:'Warm bedding essential. Monitor newborn kids closely.' });
+    if (humidity > 75) tips.push({ icon:'🧹', text:'Clean pen daily. High humidity breeds bacteria & parasites fast.' });
+    if (wind > 20) tips.push({ icon:'🏠', text:'Windproof the shelter. Drafts cause respiratory illness in goats.' });
+    if (uvIdx >= 6) tips.push({ icon:'☂️', text:'UV is high. Ensure permanent shade structures are in place.' });
+    if ((data.rain ?? 0) > 50) tips.push({ icon:'🌧️', text:'Rain likely. Keep bedding dry and raise feed off the ground.' });
+    if (temp >= 18 && temp <= 28 && humidity < 70) tips.push({ icon:'✅', text:'Ideal grazing conditions! Perfect time for outdoor activities.' });
+    if (tips.length === 0) tips.push({ icon:'✅', text:'Conditions are ideal for goats. Maintain regular feeding schedule.' });
+
+    document.getElementById('healthTips').innerHTML = tips.map(t =>
+        `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:1.2rem;flex-shrink:0;">${t.icon}</span>
+            <span style="font-size:0.82rem;color:var(--text-muted);">${t.text}</span>
+         </div>`
+    ).join('');
+
+    // Disease Risk
+    const risks = [
+        { icon:'🫁', name:'Pneumonia',    level: temp > 30 && humidity > 70 ? 'HIGH' : (humidity > 60 ? 'MEDIUM' : 'LOW'), desc:'Respiratory infection risk' },
+        { icon:'🦶', name:'Hoof Rot',     level: humidity > 80 ? 'HIGH' : (humidity > 65 ? 'MEDIUM' : 'LOW'),              desc:'Wet conditions fuel infection' },
+        { icon:'🌡️', name:'Heat Stress',  level: temp > 35 ? 'HIGH' : (temp > 28 ? 'MEDIUM' : 'LOW'),                     desc:'Affects milk & reproduction' },
+        { icon:'🪱', name:'Parasites',    level: humidity > 80 && temp > 25 ? 'HIGH' : (humidity > 70 ? 'MEDIUM' : 'LOW'), desc:'Worms & external parasites' },
+        { icon:'👁️', name:'Pink Eye',     level: wind > 20 && humidity < 40 ? 'MEDIUM' : 'LOW',                            desc:'Dusty, dry & windy conditions' },
+        { icon:'🤧', name:'Mastitis',     level: humidity > 80 && temp > 30 ? 'HIGH' : (humidity > 70 ? 'MEDIUM' : 'LOW'), desc:'Udder infection risk' },
+    ];
+    const riskDesc = { HIGH:'Take preventive action now', MEDIUM:'Monitor closely', LOW:'Normal conditions' };
+    document.getElementById('riskGrid').innerHTML = risks.map(r => `
+        <div class="risk-card ${r.level.toLowerCase()}">
+            <div class="risk-top">
+                <div class="risk-name">${r.icon} ${r.name}</div>
+                <span class="risk-badge ${r.level.toLowerCase()}">${r.level}</span>
+            </div>
+            <div class="risk-desc">${r.desc}</div>
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">${riskDesc[r.level]}</div>
+        </div>`).join('');
+
+    // Wind Analysis
+    document.getElementById('windAnalysis').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--primary);">${wind}</div>
+                <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px;">km/h Speed</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--blue);">${getWindDir(data.wind_dir)}</div>
+                <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px;">Direction</div>
+            </div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);">
+            <div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Wind Comfort Level</div>
+            <div style="font-size:1rem;font-weight:700;color:${windC.color};">${windC.label}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${
+                wind < 5  ? 'Ideal for farm work. No wind protection needed.' :
+                wind < 15 ? 'Comfortable. Good for grazing.' :
+                wind < 25 ? 'Moderate. Monitor open pens.' :
+                wind < 40 ? 'Strong winds. Secure structures.' : 'Dangerous! Shelter all animals.'
+            }</div>
+        </div>`;
+}
+
+function renderForecast(forecast) {
+    _allForecast = forecast;
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const today = new Date().toISOString().split('T')[0];
+
+    document.getElementById('forecastGrid').innerHTML = forecast.slice(0,10).map((f, i) => {
+        const d = new Date(f.date);
+        const dayName = i === 0 ? 'Today' : (i === 1 ? 'Tmrw' : days[d.getDay()]);
+        const dateStr = (d.getDate()) + '/' + (d.getMonth()+1);
+        const rainPct = Math.round(f.rain ?? f.precip_probability ?? 0);
+        const isToday = f.date === today;
+        return `
+        <div class="forecast-day${isToday?' today':''}" onclick="showDayDetail(${i})" title="${f.condition||''}">
+            <div class="forecast-day-name">${dayName}</div>
+            <div class="forecast-date-num">${dateStr}</div>
+            <div class="forecast-ico">${conditionIcon(f.condition)}</div>
+            <div class="forecast-high">${Math.round(f.temp_max)}°</div>
+            <div class="forecast-low">${Math.round(f.temp_min)}°</div>
+            <div class="forecast-rain-bar" style="width:${rainPct}%;min-width:${rainPct>0?'3px':'0'};"></div>
+            <div class="forecast-rain-pct">${rainPct > 0 ? rainPct+'%' : ''}</div>
+        </div>`;
+    }).join('');
+
+    // Rain summary
+    const totalRain = forecast.slice(0,10).filter(f => (f.rain ?? f.precip_probability ?? 0) > 30).length;
+    const maxTemp = Math.max(...forecast.slice(0,10).map(f => f.temp_max));
+    const minTemp = Math.min(...forecast.slice(0,10).map(f => f.temp_min));
+    document.getElementById('rainSummary').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+                <div style="font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--blue);">${totalRain}</div>
+                <div style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;">Rainy Days</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+                <div style="font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--danger);">${Math.round(maxTemp)}°</div>
+                <div style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;">Max Temp</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+                <div style="font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--blue);">${Math.round(minTemp)}°</div>
+                <div style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;">Min Temp</div>
+            </div>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">
+            ${totalRain >= 5 ? '🌧️ Wet week ahead — keep feed dry and pens well-drained.' :
+              totalRain >= 2 ? '⛅ Some rain expected. Plan outdoor work on dry days.' :
+              '☀️ Mostly dry week. Good for grazing and outdoor farm work.'}
+        </div>`;
+
+    // Farm calendar based on forecast
+    renderFarmCalendar(forecast.slice(0,10));
+}
+
+function renderHourly(forecast) {
+    // Demo hourly data generate karo (API se nahi aata)
+    const now = new Date();
+    const currentHour = now.getHours();
+    const temp = forecast[0]?.temp_max ?? 30;
+    const minT = forecast[0]?.temp_min ?? 20;
+
+    const hours = [];
+    for (let h = 0; h < 24; h++) {
+        const progress = Math.sin((h - 6) * Math.PI / 12);
+        const t = Math.round(minT + (temp - minT) * Math.max(0, progress));
+        const hum = Math.round(65 - progress * 15);
+        const isNow = h === currentHour;
+        const timeStr = h.toString().padStart(2,'0') + ':00';
+        const nightHour = h < 6 || h >= 20;
+        const icon = nightHour ? '🌙' : (h >= 11 && h <= 15 ? '☀️' : '⛅');
+        hours.push({ h, t, hum, timeStr, isNow, icon });
+    }
+
+    document.getElementById('hourlyTrack').innerHTML = hours.map(h => `
+        <div class="hourly-item" style="${h.isNow ? 'border-color:var(--primary);background:var(--primary-glow);' : ''}">
+            <div class="hourly-time">${h.timeStr}${h.isNow ? ' ◀' : ''}</div>
+            <div class="hourly-ico">${h.icon}</div>
+            <div class="hourly-temp">${h.t}°</div>
+            <div class="hourly-hum">💧${h.hum}%</div>
+        </div>`).join('');
+
+    // Scroll to current hour
+    setTimeout(() => {
+        const track = document.getElementById('hourlyTrack');
+        const nowEl = track.children[currentHour];
+        if (nowEl) nowEl.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+    }, 300);
+}
+
+function renderFarmCalendar(forecast) {
+    const events = [];
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    forecast.forEach((f, i) => {
+        const d = new Date(f.date);
+        const dayLabel = i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : days[d.getDay()] + ' ' + d.getDate());
+        const rain = f.rain ?? f.precip_probability ?? 0;
+        const maxT = f.temp_max;
+
+        if (rain > 70)  events.push({ day: dayLabel, title: '🌧️ Heavy Rain Expected',    desc: 'Avoid outdoor activities. Keep animals sheltered.',             color: '#3b82f6' });
+        if (maxT > 36)  events.push({ day: dayLabel, title: '🔥 Extreme Heat',           desc: 'Mandatory shade & extra water. Reduce outdoor time.',           color: '#ef4444' });
+        if (maxT < 10)  events.push({ day: dayLabel, title: '❄️ Cold Alert',             desc: 'Extra bedding for kids & pregnant does.',                      color: '#6366f1' });
+        if (rain < 20 && maxT > 20 && maxT < 32) {
+            if (i < 4) events.push({ day: dayLabel, title: '✅ Good Grazing Day',        desc: 'Ideal conditions for outdoor grazing and pasture work.',        color: '#22c55e' });
+        }
+        if (rain > 50 && i > 0) events.push({ day: dayLabel, title: '💊 Deworming Risk', desc: 'Wet conditions increase parasite load. Check schedule.',         color: '#f59e0b' });
+    });
+
+    if (events.length === 0) events.push({ day:'All Week', title:'✅ Good Farm Week', desc:'Favorable conditions throughout. Ideal for routine farm work.', color:'#22c55e' });
+
+    document.getElementById('farmCalendar').innerHTML = events.slice(0,8).map(e => `
+        <div class="cal-item">
+            <div class="cal-dot" style="background:${e.color};"></div>
+            <div>
+                <div class="cal-title">${e.title}</div>
+                <div class="cal-desc">${e.desc}</div>
+                <div class="cal-day">${e.day}</div>
+            </div>
+        </div>`).join('');
+}
+
+function showDayDetail(idx) {
+    if (!_allForecast[idx]) return;
+    document.querySelectorAll('.forecast-day').forEach((el,i) => el.classList.toggle('selected', i===idx));
+}
+
+function loadForecast(lat, lng) {
+    let url = API + '/weather/forecast/?days=10';
+    if (lat && lng) url += `&lat=${lat}&lng=${lng}`;
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.forecast.length) {
+                renderForecast(data.forecast);
+                renderHourly(data.forecast);
+            }
+        }).catch(() => {});
+}
+
+function fetchAndRender(lat, lng) {
+    let url = API + '/weather/current/';
+    if (lat && lng) url += `?lat=${lat}&lng=${lng}`;
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                renderWeather(data);
+                loadForecast(lat, lng);
+            } else {
+                document.getElementById('weatherLoading').innerHTML = `
+                    <div style="padding:40px;text-align:center;max-width:460px;margin:0 auto;">
+                        <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+                        <div style="font-weight:700;color:var(--text);margin-bottom:8px;">Weather data unavailable</div>
+                        <div style="font-size:0.82rem;color:var(--text-muted);">
+                            <code>WEATHER_API_KEY</code> set nahi hai.<br><br>
+                            <a href="https://www.visualcrossing.com/weather-api" target="_blank" style="color:var(--primary);">Free API key lein →</a>
+                            phir <code>.env</code> mein add karein.
+                        </div>
+                    </div>`;
+            }
+        }).catch(() => {
+            document.getElementById('weatherLoading').innerHTML =
+                '<div style="color:var(--danger);padding:30px;text-align:center;">⚠️ Could not connect to weather service.</div>';
+        });
+}
+
+function manualRefresh() {
+    const btn = document.getElementById('refreshBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Refreshing...'; }
+    document.getElementById('weatherContent').style.display = 'none';
+    document.getElementById('weatherLoading').style.display = 'block';
+    document.getElementById('weatherLoading').innerHTML = `
+        <div class="loading-dots" style="justify-content:center;display:inline-flex;gap:6px;"><span></span><span></span><span></span></div>
+        <div style="margin-top:12px;color:var(--text-muted);font-size:0.85rem;">Refreshing weather data...</div>`;
+    fetch(API + '/weather/cache-clear/')
+        .finally(() => {
+            fetchAndRender(_savedLat, _savedLng);
+            if (btn) { btn.disabled = false; btn.innerHTML = '🔄 <span class="en-only">Refresh</span><span class="hi-only">रिफ्रेश</span>'; }
+        });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            p => {
+                _savedLat = p.coords.latitude;
+                _savedLng = p.coords.longitude;
+                fetchAndRender(_savedLat, _savedLng);
+            },
+            () => fetchAndRender()
+        );
+    } else {
+        fetchAndRender();
+    }
+    // Auto-refresh every 10 min
+    setInterval(() => fetchAndRender(_savedLat, _savedLng), 10 * 60 * 1000);
+});
+{% endblock %}

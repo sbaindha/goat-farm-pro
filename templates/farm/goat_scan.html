@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐐 {{ goat.name }} — Goat Profile</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0a0f0d; color:#ddeee2; min-height:100vh; }
+  .header { background:linear-gradient(135deg,#1B5E20,#2E7D32); padding:2rem 1.5rem 1rem; text-align:center; }
+  .goat-emoji { font-size:3.5rem; margin-bottom:.5rem; }
+  .goat-name { font-size:1.8rem; font-weight:800; color:#fff; }
+  .goat-tag { font-family:monospace; font-size:.9rem; color:rgba(255,255,255,.7); margin-top:.2rem; }
+  .content { padding:1.25rem; max-width:480px; margin:0 auto; }
+  .card { background:#101810; border:1px solid rgba(74,222,128,.12); border-radius:14px; padding:1.25rem; margin-bottom:1rem; }
+  .card-title { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#4ade80; font-weight:700; margin-bottom:.85rem; }
+  .info-row { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid rgba(74,222,128,.07); }
+  .info-row:last-child { border-bottom:none; }
+  .info-key { font-size:.8rem; color:#6b9b74; }
+  .info-val { font-size:.8rem; font-weight:600; color:#ddeee2; }
+  .status-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:.72rem; font-weight:700; }
+  .status-A { background:rgba(74,222,128,.2); color:#4ade80; }
+  .status-P { background:rgba(236,72,153,.2); color:#ec4899; }
+  .status-S { background:rgba(245,158,11,.2); color:#f59e0b; }
+  .status-D { background:rgba(100,116,139,.2); color:#94a3b8; }
+  .health-item { padding:.65rem 0; border-bottom:1px solid rgba(74,222,128,.07); }
+  .health-item:last-child { border-bottom:none; }
+  .footer { text-align:center; padding:2rem 1rem; color:#415a47; font-size:.72rem; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="goat-emoji">🐐</div>
+  <div class="goat-name">{{ goat.name }}</div>
+  <div class="goat-tag">Tag: {{ goat.tag_number }}</div>
+  <div style="margin-top:.75rem;">
+    <span class="status-badge status-{{ goat.status }}">
+      {% if goat.status == 'A' %}Active{% elif goat.status == 'P' %}Pregnant{% elif goat.status == 'S' %}Sold{% elif goat.status == 'D' %}Dead{% endif %}
+    </span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="card">
+    <div class="card-title">Basic Info</div>
+    <div class="info-row"><span class="info-key">Breed</span><span class="info-val">{{ goat.get_breed_display }}</span></div>
+    <div class="info-row"><span class="info-key">Gender</span><span class="info-val">{% if goat.gender == 'M' %}♂ Male{% else %}♀ Female{% endif %}</span></div>
+    <div class="info-row"><span class="info-key">Age</span><span class="info-val">{{ goat.get_age_years }} yrs ({{ goat.get_age_months }} months)</span></div>
+    <div class="info-row"><span class="info-key">Weight</span><span class="info-val">{{ goat.weight }} kg</span></div>
+    <div class="info-row"><span class="info-key">Color</span><span class="info-val">{{ goat.color }}</span></div>
+    <div class="info-row"><span class="info-key">DOB</span><span class="info-val">{{ goat.date_of_birth }}</span></div>
+  </div>
+
+  {% if latest_weight %}
+  <div class="card">
+    <div class="card-title">Latest Weight</div>
+    <div style="font-family:monospace;font-size:2rem;font-weight:800;color:#4ade80;">{{ latest_weight.weight }} kg</div>
+    <div style="font-size:.72rem;color:#6b9b74;margin-top:.3rem;">Recorded: {{ latest_weight.date }}</div>
+  </div>
+  {% endif %}
+
+  {% if total_milk %}
+  <div class="card">
+    <div class="card-title">Total Milk Production</div>
+    <div style="font-family:monospace;font-size:2rem;font-weight:800;color:#3b82f6;">{{ total_milk|floatformat:1 }} L</div>
+  </div>
+  {% endif %}
+
+  {% if recent_health %}
+  <div class="card">
+    <div class="card-title">Recent Health Records</div>
+    {% for h in recent_health %}
+    <div class="health-item">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:.8rem;font-weight:600;color:#ddeee2;">{{ h.get_record_type_display }}</span>
+        <span style="font-size:.72rem;color:#6b9b74;">{{ h.date }}</span>
+      </div>
+      {% if h.medicine_used %}<div style="font-size:.72rem;color:#6b9b74;margin-top:.2rem;">Medicine: {{ h.medicine_used }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if goat.notes %}
+  <div class="card">
+    <div class="card-title">Notes</div>
+    <div style="font-size:.82rem;color:#ddeee2;line-height:1.6;">{{ goat.notes }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="footer">
+  🐐 Goat Farm Management System<br>
+  Scanned via QR Tag — {{ goat.tag_number }}
+</div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+{% extends 'farm/base.html' %}
+{% block title %}Expenses — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>📉 खर्च प्रबंधन</span><span class='en-only'>📉 Expenses</span>{% endblock %}
+{% block page_sub %}<span class='hi-only'>सभी फार्म खर्च ट्रैक करें</span><span class='en-only'>Track all farm expenditures</span>{% endblock %}
+{% block page_breadcrumb %}<span class='hi-only'>खर्च</span><span class='en-only'>expenses</span>{% endblock %}
+{% block nav_expenses %}active{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="document.getElementById('expModal').classList.add('open')">+ <span class='hi-only'>खर्च जोड़ें</span><span class='en-only'>Add Expense</span></button>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:22px;">
+    <div class="stat-card green"><div class="stat-icon-wrap">📋</div><div class="stat-value" id="sc-total">₹0</div><div class="stat-label">Total Spent</div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">🌾</div><div class="stat-value" id="sc-feed">₹0</div><div class="stat-label">Feed</div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">💊</div><div class="stat-value" id="sc-med">₹0</div><div class="stat-label">Medicine</div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">👷</div><div class="stat-value" id="sc-labour">₹0</div><div class="stat-label">Labour</div></div>
+</div>
+
+<div class="card" style="padding:0;">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Type</th><th>Date</th><th>Description</th><th>Paid To</th><th>Amount</th><th>Method</th></tr></thead>
+            <tbody id="expBody"><tr><td colspan="6" style="padding:30px;text-align:center;"><div class="loading-dots" style="display:inline-flex;gap:6px;"><span></span><span></span><span></span></div></td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="expModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">📋 Add Expense</div>
+            <button class="modal-close" onclick="document.getElementById('expModal').classList.remove('open')">✕</button>
+        </div>
+        <form onsubmit="submitExp(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group"><label class="form-label">Type *</label>
+                    <select class="form-select" id="e-type">
+                        <option value="F">🌾 Feed</option><option value="M">💊 Medicine</option>
+                        <option value="V">🩺 Veterinary</option><option value="R">🔧 Repairs</option>
+                        <option value="U">⚡ Utilities</option><option value="L">👷 Labour</option>
+                        <option value="O">📦 Other</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="e-date" required></div>
+                <div class="form-group" style="grid-column:1/-1"><label class="form-label">Description *</label><textarea class="form-textarea" id="e-desc" required></textarea></div>
+                <div class="form-group"><label class="form-label">Paid To *</label><input class="form-input" id="e-to" required></div>
+                <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" type="number" id="e-amount" step="0.01" min="0" required></div>
+                <div class="form-group"><label class="form-label">Payment Method</label>
+                    <select class="form-select" id="e-method">
+                        <option value="C">💵 Cash</option><option value="B">🏦 Bank</option>
+                        <option value="O">📱 Online</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('expModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Expense</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+const ET  = {F:'🌾 Feed',M:'💊 Medicine',V:'🩺 Vet',R:'🔧 Repairs',U:'⚡ Utilities',L:'👷 Labour',O:'📦 Other'};
+const PM  = {C:'💵 Cash',B:'🏦 Bank',O:'📱 Online'};
+
+function fmt(n) { return n >= 1000 ? '₹' + (n/1000).toFixed(1) + 'k' : '₹' + n.toFixed(0); }
+
+function loadExpenses() {
+    fetch(API + '/expenses/')
+        .then(r => r.json())
+        .then(data => {
+            const total  = data.reduce((s, r) => s + r.amount, 0);
+            const feed   = data.filter(r => r.expense_type === 'F').reduce((s, r) => s + r.amount, 0);
+            const med    = data.filter(r => r.expense_type === 'M').reduce((s, r) => s + r.amount, 0);
+            const labour = data.filter(r => r.expense_type === 'L').reduce((s, r) => s + r.amount, 0);
+            document.getElementById('sc-total').textContent  = fmt(total);
+            document.getElementById('sc-feed').textContent   = fmt(feed);
+            document.getElementById('sc-med').textContent    = fmt(med);
+            document.getElementById('sc-labour').textContent = fmt(labour);
+            const tbody = document.getElementById('expBody');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-dim);">No expenses recorded</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(r => `<tr>
+                <td>${ET[r.expense_type] || r.expense_type}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">${r.date}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.description}</td>
+                <td>${r.paid_to}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#fca5a5;">₹${r.amount}</td>
+                <td>${PM[r.payment_method] || r.payment_method}</td>
+            </tr>`).join('');
+        })
+        .catch(() => { document.getElementById('expBody').innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:20px;">Error loading</td></tr>'; });
+}
+
+async function submitExp(e) {
+    e.preventDefault();
+    const payload = {
+        expense_type: document.getElementById('e-type').value,
+        date: document.getElementById('e-date').value,
+        description: document.getElementById('e-desc').value,
+        paid_to: document.getElementById('e-to').value,
+        amount: parseFloat(document.getElementById('e-amount').value),
+        payment_method: document.getElementById('e-method').value,
+    };
+    try {
+        const res = await fetch(`${API}/expenses/`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('✅ Expense recorded!');
+        document.getElementById('expModal').classList.remove('open');
+        loadExpenses();
+    } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+document.getElementById('expModal').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); });
+window.addEventListener('DOMContentLoaded', loadExpenses);
+{% endblock %}

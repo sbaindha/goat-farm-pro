@@ -1,0 +1,241 @@
+{% extends 'farm/base.html' %}
+{% block title %}Analytics — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class="hi-only">📊 Analytics & Reports</span><span class="en-only">📊 Analytics & Reports</span>{% endblock %}
+{% block page_sub %}<span class="hi-only">Profit-Loss, Breed Performance, ROI</span><span class="en-only">Profit-Loss, Breed Performance, ROI</span>{% endblock %}
+{% block page_breadcrumb %}analytics{% endblock %}
+{% block nav_analytics %}active{% endblock %}
+
+{% block page_actions %}
+<div style="display:flex;gap:10px;">
+  <select id="yearSel" class="btn btn-outline" onchange="loadAll()" style="cursor:pointer;">
+    <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+  </select>
+  <button class="btn btn-primary" onclick="window.print()">🖨️ Print</button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+.chart-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; }
+.chart-title { font-size:.88rem; font-weight:700; color:var(--text); margin-bottom:1rem; display:flex; align-items:center; gap:7px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem; margin-bottom:1.25rem; }
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.25rem; }
+.kpi { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; }
+.kpi-val { font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:800; }
+.kpi-lbl { font-size:.7rem; color:var(--text-muted); margin-top:.3rem; }
+.kpi-chg { font-size:.7rem; font-weight:700; margin-top:.3rem; }
+.pos { color:#4ade80; } .neg { color:#ef4444; }
+.breed-row { display:flex; align-items:center; justify-content:space-between; padding:.65rem 0; border-bottom:1px solid var(--border); }
+.breed-bar-wrap { flex:1; margin:0 .75rem; }
+.breed-bar { height:6px; border-radius:10px; background:linear-gradient(90deg,var(--primary),#86efac); transition:width .8s; }
+.top-row { display:flex; align-items:center; justify-content:space-between; padding:.65rem 1rem; border-bottom:1px solid var(--border); }
+.rank { font-family:'JetBrains Mono',monospace; font-size:1rem; font-weight:800; color:var(--text-dim); width:24px; }
+.tab-btns { display:flex; gap:8px; margin-bottom:1rem; }
+.tab-btn { padding:.4rem 1rem; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:.75rem; font-weight:600; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; }
+.tab-btn.on { background:var(--primary); color:#fff; border-color:transparent; }
+@media(max-width:900px){.grid2,.grid3,.kpi-row{grid-template-columns:1fr;}}
+{% endblock %}
+
+{% block content %}
+<div class="kpi-row" id="kpiRow">
+  <div class="kpi"><div class="kpi-val pos" id="kNetProfit">—</div><div class="kpi-lbl">Net Profit (This Year)</div></div>
+  <div class="kpi"><div class="kpi-val" id="kIncome">—</div><div class="kpi-lbl">Total Income</div></div>
+  <div class="kpi"><div class="kpi-val" id="kExpense">—</div><div class="kpi-lbl">Total Expense</div></div>
+  <div class="kpi"><div class="kpi-val" id="kMilkEff">—</div><div class="kpi-lbl">Feed Cost / Liter</div></div>
+</div>
+
+<div class="grid2">
+  <!-- P&L Chart -->
+  <div class="chart-card">
+    <div class="chart-title">📈 Monthly Profit & Loss</div>
+    <canvas id="plChart" height="180"></canvas>
+  </div>
+  <!-- Herd Growth -->
+  <div class="chart-card">
+    <div class="chart-title">🐐 Herd Growth Trend</div>
+    <canvas id="herdChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="grid2">
+  <!-- Breed Performance -->
+  <div class="chart-card">
+    <div class="chart-title">🏆 Breed-wise Performance (Avg Milk / Goat)</div>
+    <div id="breedList"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+  <!-- Top Goats -->
+  <div class="chart-card">
+    <div class="chart-title">⭐ Top Performing Goats</div>
+    <div class="tab-btns">
+      <button class="tab-btn on" onclick="loadTopGoats('milk',this)">🥛 Milk</button>
+      <button class="tab-btn" onclick="loadTopGoats('weight_gain',this)">⚖️ Weight</button>
+      <button class="tab-btn" onclick="loadTopGoats('health',this)">🏥 Health</button>
+    </div>
+    <div id="topList"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+</div>
+
+<div class="grid3">
+  <!-- ROI Top 5 -->
+  <div class="chart-card">
+    <div class="chart-title">💹 Top ROI Goats</div>
+    <div id="roiList"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+  <!-- Feed Efficiency -->
+  <div class="chart-card">
+    <div class="chart-title">🌾 Feed Efficiency (₹/Liter)</div>
+    <canvas id="feedChart" height="200"></canvas>
+  </div>
+  <!-- AI Revenue Forecast -->
+  <div class="chart-card">
+    <div class="chart-title">🤖 AI Revenue Forecast</div>
+    <div id="forecastList"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+// Load Chart.js from CDN
+const s = document.createElement('script');
+s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+s.onload = () => loadAll();
+document.head.appendChild(s);
+
+const API = window.location.origin + '/api';
+let plChartInst, herdChartInst, feedChartInst;
+
+function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+async function loadAll() {
+  const year = document.getElementById('yearSel').value;
+  await Promise.all([loadPL(year), loadBreeds(), loadHerd(), loadFeed(), loadROI(), loadTopGoats('milk'), loadForecast()]);
+}
+
+async function loadPL(year) {
+  try {
+    const d = await fetch(`${API}/analytics/pl-chart/?year=${year}`).then(r=>r.json());
+    const months = d.months || [];
+    document.getElementById('kNetProfit').textContent = fmt(d.total_profit||0);
+    document.getElementById('kNetProfit').className = 'kpi-val ' + (d.total_profit>=0?'pos':'neg');
+    document.getElementById('kIncome').textContent = fmt(d.total_income||0);
+    document.getElementById('kExpense').textContent = fmt(d.total_expense||0);
+
+    const labels = months.map(m=>m.month_name);
+    const inc = months.map(m=>m.income);
+    const exp = months.map(m=>m.expense);
+    const prof = months.map(m=>m.profit);
+
+    if (plChartInst) plChartInst.destroy();
+    const ctx = document.getElementById('plChart').getContext('2d');
+    plChartInst = new Chart(ctx, {
+      type: 'bar',
+      data: { labels,
+        datasets: [
+          { label:'Income', data:inc, backgroundColor:'rgba(74,222,128,0.7)', borderRadius:5 },
+          { label:'Expense', data:exp, backgroundColor:'rgba(239,68,68,0.6)', borderRadius:5 },
+          { label:'Profit', data:prof, type:'line', borderColor:'#f59e0b', pointBackgroundColor:'#f59e0b', tension:.4, borderWidth:2 }
+        ]},
+      options:{ responsive:true, plugins:{ legend:{ labels:{ color:'#ddeee2', font:{size:11} } } },
+        scales:{ x:{ ticks:{color:'#6b9b74'}, grid:{color:'rgba(74,222,128,0.07)'} }, y:{ ticks:{color:'#6b9b74', callback:v=>'₹'+v.toLocaleString()}, grid:{color:'rgba(74,222,128,0.07)'} } } }
+    });
+  } catch(e) { console.error('PL error', e); }
+}
+
+async function loadBreeds() {
+  try {
+    const data = await fetch(`${API}/analytics/breed-performance/`).then(r=>r.json());
+    const maxMilk = Math.max(...data.map(b=>b.avg_milk_per_goat), 1);
+    document.getElementById('breedList').innerHTML = data.slice(0,6).map(b => `
+      <div class="breed-row">
+        <span style="font-size:.82rem;font-weight:700;color:var(--text);width:100px;flex-shrink:0;">${b.breed}</span>
+        <div class="breed-bar-wrap"><div class="breed-bar" style="width:${b.avg_milk_per_goat/maxMilk*100}%"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--primary);width:70px;text-align:right;">${b.avg_milk_per_goat}L/goat</span>
+        <span style="font-size:.7rem;color:var(--text-dim);width:50px;text-align:right;">${b.total_goats} goats</span>
+      </div>`).join('') || '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">No breed data</div>';
+  } catch(e) {}
+}
+
+async function loadHerd() {
+  try {
+    const data = await fetch(`${API}/analytics/herd-growth/?months=12`).then(r=>r.json());
+    const labels = data.map(d=>d.month_name);
+    if (herdChartInst) herdChartInst.destroy();
+    const ctx = document.getElementById('herdChart').getContext('2d');
+    herdChartInst = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets:[
+        { label:'Births', data:data.map(d=>d.births), borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,.12)', tension:.4, fill:true },
+        { label:'Sales', data:data.map(d=>d.sales), borderColor:'#f59e0b', tension:.4 },
+        { label:'Deaths', data:data.map(d=>d.deaths), borderColor:'#ef4444', tension:.4 },
+      ]},
+      options:{ responsive:true, plugins:{ legend:{ labels:{ color:'#ddeee2', font:{size:11} } } },
+        scales:{ x:{ ticks:{color:'#6b9b74'}, grid:{color:'rgba(74,222,128,0.07)'} }, y:{ ticks:{color:'#6b9b74'}, grid:{color:'rgba(74,222,128,0.07)'} } } }
+    });
+  } catch(e) {}
+}
+
+async function loadFeed() {
+  try {
+    const data = await fetch(`${API}/analytics/feed-efficiency/`).then(r=>r.json());
+    if (feedChartInst) feedChartInst.destroy();
+    const ctx = document.getElementById('feedChart').getContext('2d');
+    feedChartInst = new Chart(ctx, {
+      type:'line',
+      data:{ labels: data.map(d=>d.month_name),
+        datasets:[{ label:'₹/Liter', data:data.map(d=>d.cost_per_liter||0),
+          borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.12)', tension:.4, fill:true }]},
+      options:{ responsive:true, plugins:{ legend:{ labels:{ color:'#ddeee2', font:{size:11} } } },
+        scales:{ x:{ ticks:{color:'#6b9b74'}, grid:{color:'rgba(59,130,246,0.07)'} }, y:{ ticks:{color:'#6b9b74', callback:v=>'₹'+v}, grid:{color:'rgba(59,130,246,0.07)'} } } }
+    });
+    // KPI
+    const last = data.filter(d=>d.cost_per_liter).slice(-1)[0];
+    document.getElementById('kMilkEff').textContent = last ? '₹'+last.cost_per_liter : '—';
+  } catch(e) {}
+}
+
+async function loadROI() {
+  try {
+    const data = await fetch(`${API}/analytics/roi/?limit=5`).then(r=>r.json());
+    document.getElementById('roiList').innerHTML = data.map((g,i)=>`
+      <div class="top-row">
+        <span class="rank">#${i+1}</span>
+        <div style="flex:1"><div style="font-size:.82rem;font-weight:700;color:var(--text);">${g.name}</div>
+          <div style="font-size:.7rem;color:var(--text-dim);">${g.tag_number} · ${g.breed}</div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;color:${g.roi_percent>=0?'#4ade80':'#ef4444'};">${g.roi_percent}%</span>
+      </div>`).join('') || '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">No data</div>';
+  } catch(e) {}
+}
+
+async function loadTopGoats(category, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  try {
+    const data = await fetch(`${API}/analytics/top-goats/?category=${category}&limit=5`).then(r=>r.json());
+    document.getElementById('topList').innerHTML = data.map((g,i)=>`
+      <div class="top-row">
+        <span class="rank">#${i+1}</span>
+        <div style="flex:1"><div style="font-size:.82rem;font-weight:700;color:var(--text);">${g.name}</div>
+          <div style="font-size:.7rem;color:var(--text-dim);">${g.tag_number} · ${g.breed}</div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--primary);">${g.value} ${g.unit}</span>
+      </div>`).join('') || '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">No data</div>';
+  } catch(e) {}
+}
+
+async function loadForecast() {
+  try {
+    const data = await fetch(`${API}/ai/revenue-forecast/?months_ahead=3`).then(r=>r.json());
+    const confColor = { High:'#4ade80', Medium:'#f59e0b', Low:'#ef4444' };
+    document.getElementById('forecastList').innerHTML = data.map(f=>`
+      <div style="padding:.85rem;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><div style="font-size:.82rem;font-weight:700;color:var(--text);">${f.month_name}</div>
+            <div style="font-size:.7rem;color:var(--text-dim);">Trend: ${f.growth_rate_pct>0?'+':''}${f.growth_rate_pct}%/month</div></div>
+          <div style="text-align:right;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:800;color:var(--primary);">${fmt(f.projected_revenue)}</div>
+            <div style="font-size:.65rem;color:${confColor[f.confidence]||'#6b9b74'};">● ${f.confidence} Confidence</div>
+          </div>
+        </div>
+      </div>`).join('') || '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">Not enough data for forecast</div>';
+  } catch(e) {}
+}
+{% endblock %}

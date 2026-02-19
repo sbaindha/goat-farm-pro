@@ -1,0 +1,149 @@
+{% extends 'farm/base.html' %}
+{% block title %}Invoices — Goat Farm Pro{% endblock %}
+{% block page_title %}🧾 Invoice Management{% endblock %}
+{% block page_sub %}Sale invoices, GST receipts, PDF download{% endblock %}
+{% block page_breadcrumb %}invoices{% endblock %}
+{% block nav_invoices %}active{% endblock %}
+
+{% block extra_css %}
+.inv-table-wrap { overflow-x:auto; }
+.gst-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.65rem; font-weight:700; }
+.gst-0 { background:rgba(74,222,128,.15); color:#4ade80; }
+.gst-5 { background:rgba(245,158,11,.15); color:#f59e0b; }
+.gst-18 { background:rgba(59,130,246,.15); color:#3b82f6; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1000; display:flex; align-items:center; justify-content:center; }
+.modal-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; width:420px; max-width:95vw; }
+.form-group { margin-bottom:1rem; }
+.form-label { display:block; font-size:.75rem; font-weight:600; color:var(--text-muted); margin-bottom:.35rem; }
+.form-control { width:100%; padding:.6rem .9rem; background:var(--input-bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:.85rem; font-family:inherit; }
+.form-control:focus { outline:none; border-color:var(--primary); }
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+  <div class="stat-card green" style="flex:1;min-width:140px;">
+    <div class="stat-icon-wrap">🧾</div>
+    <div class="stat-value" id="kTotal">—</div>
+    <div class="stat-label">Total Invoices</div>
+  </div>
+  <div class="stat-card blue" style="flex:1;min-width:140px;">
+    <div class="stat-icon-wrap">💰</div>
+    <div class="stat-value" id="kPaid">—</div>
+    <div class="stat-label">Paid</div>
+  </div>
+  <div class="stat-card amber" style="flex:1;min-width:140px;">
+    <div class="stat-icon-wrap">⏳</div>
+    <div class="stat-value" id="kUnpaid">—</div>
+    <div class="stat-label">Unpaid</div>
+  </div>
+  <div class="stat-card green" style="flex:1;min-width:140px;">
+    <div class="stat-icon-wrap">📊</div>
+    <div class="stat-value" id="kRevenue">—</div>
+    <div class="stat-label">Total Revenue</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="padding:.9rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
+    <span style="font-size:.88rem;font-weight:700;color:var(--text);">📄 All Sales & Invoices</span>
+    <div style="display:flex;gap:.5rem;">
+      <input type="text" id="searchInv" placeholder="Search buyer..." class="form-control" style="width:200px;" oninput="filterTable()">
+      <select id="filterPay" class="form-control" style="width:130px;" onchange="filterTable()">
+        <option value="">All Payments</option>
+        <option value="P">Paid</option>
+        <option value="UP">Unpaid</option>
+        <option value="PA">Partial</option>
+      </select>
+    </div>
+  </div>
+  <div class="inv-table-wrap">
+    <table id="invTable">
+      <thead><tr>
+        <th>Invoice #</th>
+        <th>Date</th>
+        <th>Buyer</th>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>GST</th>
+        <th>Payment</th>
+        <th>Actions</th>
+      </tr></thead>
+      <tbody id="invTbody"><tr><td colspan="8" style="text-align:center;padding:2rem;"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Farm Settings Note -->
+<div class="card" style="padding:1.25rem;margin-top:1rem;display:flex;gap:1rem;align-items:flex-start;">
+  <span style="font-size:1.5rem;">⚙️</span>
+  <div>
+    <div style="font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:.3rem;">Invoice Settings Setup</div>
+    <div style="font-size:.78rem;color:var(--text-muted);line-height:1.7;">
+      PDF invoice pe apna farm naam, address, GST number dikhane ke liye <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;">.env</code> file mein ye settings add karein:<br>
+      <code style="background:var(--bg3);padding:4px 8px;border-radius:4px;display:inline-block;margin-top:.4rem;font-size:.78rem;">FARM_NAME=Mera Farm | FARM_ADDRESS=... | FARM_GST=22AAAAA0000A1Z5</code>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+const GST = { G:0, M:5, MN:0, O:18 };
+const TYPE_LABELS = { G:'🐐 Goat', M:'🥛 Milk', MN:'🌿 Manure', O:'Other' };
+const PAY_LABELS = { P:'Paid', UP:'Unpaid', PA:'Partial' };
+const PAY_COL = { P:'badge-green', UP:'badge-amber', PA:'badge-blue' };
+let allSales = [];
+
+function fmt(n){ return '₹'+Math.round(n).toLocaleString('en-IN'); }
+
+async function loadInvoices() {
+  try {
+    const data = await fetch(`${API}/sales/?page_size=200`).then(r=>r.json());
+    allSales = Array.isArray(data) ? data : (data.items || []);
+
+    document.getElementById('kTotal').textContent = allSales.length;
+    document.getElementById('kPaid').textContent = allSales.filter(s=>s.payment_status==='P').length;
+    document.getElementById('kUnpaid').textContent = allSales.filter(s=>s.payment_status==='UP').length;
+    const rev = allSales.reduce((s,x)=>s+x.total_amount,0);
+    document.getElementById('kRevenue').textContent = fmt(rev);
+
+    renderTable(allSales);
+  } catch(e) { console.error(e); }
+}
+
+function renderTable(sales) {
+  const tbody = document.getElementById('invTbody');
+  if (!sales.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-dim);">Koi sale record nahi mila</td></tr>';
+    return;
+  }
+  const gstPct = (type) => GST[type] || 0;
+  tbody.innerHTML = sales.map((s,i) => {
+    const gst = gstPct(s.sale_type);
+    const invNo = s.invoice_number || `DRAFT-${s.id}`;
+    return `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--primary);">${invNo}</td>
+      <td style="font-size:.78rem;">${s.date}</td>
+      <td style="font-weight:600;color:var(--text);">${s.buyer_name}</td>
+      <td>${TYPE_LABELS[s.sale_type]||s.sale_type}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);">${fmt(s.total_amount)}</td>
+      <td><span class="gst-badge gst-${gst}">${gst}% GST</span></td>
+      <td><span class="badge ${PAY_COL[s.payment_status]||'badge-gray'}">${PAY_LABELS[s.payment_status]||s.payment_status}</span></td>
+      <td>
+        <a href="${API.replace('/api','')}/api/invoices/${s.id}/pdf/" target="_blank" class="btn btn-primary btn-sm">📄 PDF</a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInv').value.toLowerCase();
+  const pay = document.getElementById('filterPay').value;
+  renderTable(allSales.filter(s =>
+    (!q || s.buyer_name.toLowerCase().includes(q)) &&
+    (!pay || s.payment_status === pay)
+  ));
+}
+
+window.addEventListener('DOMContentLoaded', loadInvoices);
+{% endblock %}

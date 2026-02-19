@@ -1,0 +1,122 @@
+{% extends 'farm/base.html' %}
+{% block title %}Health Records — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>🏥 स्वास्थ्य रिकॉर्ड</span><span class='en-only'>🏥 Health Records</span>{% endblock %}
+{% block page_breadcrumb %}<span class='hi-only'>स्वास्थ्य</span><span class='en-only'>health</span>{% endblock %}
+{% block nav_health %}active{% endblock %}
+
+{% block page_sub %}<span class='hi-only'>टीकाकरण, उपचार और चेकअप</span><span class='en-only'>Vaccinations, treatments & checkups</span>{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="document.getElementById('healthModal').classList.add('open')">+ <span class='hi-only'>रिकॉर्ड जोड़ें</span><span class='en-only'>Add Record</span></button>
+{% endblock %}
+
+{% block extra_css %}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:22px;">
+    <div class="stat-card green"><div class="stat-icon-wrap">💉</div><div class="stat-value" id="sc-vacc">—</div><div class="stat-label"><span class="hi-only">टीकाकरण</span><span class="en-only">Vaccinations</span></div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">🪱</div><div class="stat-value" id="sc-deworm">—</div><div class="stat-label"><span class="hi-only">कृमिनाशक</span><span class="en-only">Deworming</span></div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">💊</div><div class="stat-value" id="sc-treat">—</div><div class="stat-label"><span class="hi-only">उपचार</span><span class="en-only">Treatments</span></div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">📋</div><div class="stat-value" id="sc-total">—</div><div class="stat-label"><span class="hi-only">कुल रिकॉर्ड</span><span class="en-only">Total Records</span></div></div>
+</div>
+
+<div class="card" style="padding:0;">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th><span class="hi-only">बकरी</span><span class="en-only">Goat</span></th><th><span class="hi-only">प्रकार</span><span class="en-only">Type</span></th><th><span class="hi-only">तारीख</span><span class="en-only">Date</span></th><th><span class="hi-only">विवरण</span><span class="en-only">Description</span></th><th><span class="hi-only">दवाई</span><span class="en-only">Medicine</span></th><th><span class="hi-only">खर्च</span><span class="en-only">Cost</span></th><th><span class="hi-only">डॉक्टर</span><span class="en-only">Vet</span></th></tr></thead>
+            <tbody id="healthBody"><tr><td colspan="7" style="padding:30px;text-align:center;"><div class="loading-dots" style="display:inline-flex;gap:6px;"><span></span><span></span><span></span></div></td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="healthModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">💉 Add Health Record</div>
+            <button class="modal-close" onclick="document.getElementById('healthModal').classList.remove('open')">✕</button>
+        </div>
+        <form onsubmit="submitHealth(event)">
+            <div class="form-grid">
+                <div class="form-group"><label class="form-label">Goat ID *</label><input class="form-input" id="h-goat" type="number" required></div>
+                <div class="form-group"><label class="form-label">Record Type *</label>
+                    <select class="form-select" id="h-type">
+                        <option value="V">Vaccination</option><option value="D">Deworming</option>
+                        <option value="T">Treatment</option><option value="C">Checkup</option><option value="S">Surgery</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="h-date" required></div>
+                <div class="form-group"><label class="form-label">Cost (₹) *</label><input class="form-input" type="number" id="h-cost" min="0" step="0.01" required></div>
+                <div class="form-group" style="grid-column:1/-1"><label class="form-label">Description *</label><textarea class="form-textarea" id="h-desc" required></textarea></div>
+                <div class="form-group"><label class="form-label">Medicine Used</label><input class="form-input" id="h-med" placeholder="Medicine name"></div>
+                <div class="form-group"><label class="form-label">Dosage</label><input class="form-input" id="h-dosage" placeholder="e.g. 5ml"></div>
+                <div class="form-group"><label class="form-label">Veterinarian</label><input class="form-input" id="h-vet" placeholder="Vet name"></div>
+                <div class="form-group"><label class="form-label">Next Due Date</label><input class="form-input" type="date" id="h-next"></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('healthModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+const RT = {V:'💉 Vaccination',D:'🪱 Deworming',T:'💊 Treatment',C:'🩺 Checkup',S:'🔪 Surgery'};
+
+function loadHealth() {
+    fetch(API + '/health/')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('sc-total').textContent  = data.length;
+            document.getElementById('sc-vacc').textContent   = data.filter(r => r.record_type === 'V').length;
+            document.getElementById('sc-deworm').textContent = data.filter(r => r.record_type === 'D').length;
+            document.getElementById('sc-treat').textContent  = data.filter(r => r.record_type === 'T').length;
+            const tbody = document.getElementById('healthBody');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-dim);">No health records yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(r => `<tr>
+                <td>🐐 #${r.goat_id}</td>
+                <td>${RT[r.record_type] || r.record_type}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">${r.date}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.description}</td>
+                <td>${r.medicine_used || '—'}</td>
+                <td style="font-family:'JetBrains Mono',monospace;">₹${r.cost}</td>
+                <td>${r.veterinarian || '—'}</td>
+            </tr>`).join('');
+        })
+        .catch(() => { document.getElementById('healthBody').innerHTML = '<tr><td colspan="7" style="color:var(--danger);text-align:center;padding:20px;">Error loading</td></tr>'; });
+}
+
+async function submitHealth(e) {
+    e.preventDefault();
+    const payload = {
+        goat_id: parseInt(document.getElementById('h-goat').value),
+        record_type: document.getElementById('h-type').value,
+        date: document.getElementById('h-date').value,
+        description: document.getElementById('h-desc').value,
+        medicine_used: document.getElementById('h-med').value,
+        dosage: document.getElementById('h-dosage').value,
+        cost: parseFloat(document.getElementById('h-cost').value),
+        veterinarian: document.getElementById('h-vet').value,
+        next_due_date: document.getElementById('h-next').value || null,
+    };
+    try {
+        const res = await fetch(`${API}/health/`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('✅ Health record saved!');
+        document.getElementById('healthModal').classList.remove('open');
+        loadHealth();
+    } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+document.getElementById('healthModal').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); });
+window.addEventListener('DOMContentLoaded', loadHealth);
+{% endblock %}

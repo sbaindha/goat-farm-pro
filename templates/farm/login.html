@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="hi" id="loginHtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — 🐐 Goat Farm Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* ── DARK ── */
+        :root {
+            --bg:      #0a0f0d;
+            --card:    #1a261b;
+            --border:  rgba(34,197,94,0.2);
+            --border-strong: rgba(34,197,94,0.4);
+            --primary: #22c55e;
+            --primary-dark: #16a34a;
+            --primary-glow: rgba(34,197,94,0.2);
+            --text:    #e8f5e9;
+            --text-muted: #7a9e7e;
+            --text-dim:#4a6b4d;
+            --input-bg:#182218;
+            --danger:  #ef4444;
+        }
+        /* ── LIGHT ── */
+        [data-theme="light"] {
+            --bg:      #f0faf2;
+            --card:    #ffffff;
+            --border:  rgba(22,163,74,0.2);
+            --border-strong: rgba(22,163,74,0.45);
+            --primary: #16a34a;
+            --primary-dark: #15803d;
+            --primary-glow: rgba(22,163,74,0.12);
+            --text:    #1a2e1c;
+            --text-muted: #3d6b42;
+            --text-dim:#6b9e72;
+            --input-bg:#f7fdf8;
+            --danger:  #dc2626;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Ambient glow background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -200px; left: 50%;
+            transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, var(--primary-glow), transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Theme toggle — top right */
+        .theme-btn {
+            position: fixed;
+            top: 20px; right: 20px;
+            width: 40px; height: 40px;
+            background: var(--card);
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+        .theme-btn:hover { background: var(--primary-glow); border-color: var(--primary); }
+
+        /* Login card */
+        .login-wrap {
+            width: 100%;
+            max-width: 420px;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Brand section */
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo {
+            width: 72px; height: 72px;
+            background: var(--primary-glow);
+            border: 2px solid var(--border-strong);
+            border-radius: 20px;
+            font-size: 2.2rem;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .brand-name {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.5px;
+        }
+
+        .brand-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 4px;
+        }
+
+        /* Card */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+        }
+
+        [data-theme="light"] .card {
+            box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .card-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        /* Form */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .field input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text);
+            font-size: 0.92rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .field input::placeholder { color: var(--text-dim); }
+
+        .field input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Error */
+        .error-box {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.82rem;
+            color: #fca5a5;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Submit button */
+        .btn-login {
+            width: 100%;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.25s;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        [data-theme="light"] .btn-login { color: #fff; }
+
+        .btn-login:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px var(--primary-glow);
+        }
+
+        .btn-login:active { transform: translateY(0); }
+
+        .btn-login .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer hint */
+        .login-hint {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .login-hint a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Decorative dots */
+        .dots {
+            position: fixed;
+            bottom: 30px; right: 30px;
+            display: flex; gap: 6px;
+        }
+        .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--border-strong);
+        }
+        .dot:nth-child(2) { background: var(--primary); opacity: 0.5; }
+        .dot:nth-child(3) { opacity: 0.3; }
+    </style>
+</head>
+<body>
+
+    <!-- Theme toggle -->
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Day/Night">🌙</button>
+
+    <div class="login-wrap">
+        <!-- Brand -->
+        <div class="brand">
+            <div class="brand-logo">🐐</div>
+            <div class="brand-name">Goat Farm Pro</div>
+            <div class="brand-sub">v5.1 Ultimate Edition</div>
+        </div>
+
+        <!-- Card -->
+        <div class="card">
+            <div class="card-title">Namaste! 👋 Login Karein</div>
+            <div class="card-sub">Apna username aur password enter karein</div>
+
+            {% if error %}
+            <div class="error-box">⚠️ {{ error }}</div>
+            {% endif %}
+
+            <form method="post" onsubmit="showLoading()">
+                {% csrf_token %}
+                <div class="field">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Apna username"
+                           autofocus autocomplete="username" required
+                           value="{{ request.POST.username|default:'' }}">
+                </div>
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="••••••••"
+                           autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <span class="spinner" id="loginSpinner"></span>
+                    <span id="loginBtnText">🔓 Login</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="login-hint">
+            Admin account chahiye? <a href="/admin/">Django Admin</a> se banao
+        </div>
+    </div>
+
+    <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+
+    <script>
+        // Apply saved theme on load
+        (function() {
+            const saved = localStorage.getItem('farm_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('themeBtn');
+            if (btn) btn.textContent = saved === 'dark' ? '🌙' : '☀️';
+        })();
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('farm_theme', next);
+            document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙' : '☀️';
+        }
+
+        function showLoading() {
+            document.getElementById('loginSpinner').style.display = 'block';
+            document.getElementById('loginBtnText').textContent = 'Logging in...';
+            document.getElementById('loginBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>

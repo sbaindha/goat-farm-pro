@@ -1,0 +1,268 @@
+{% extends 'farm/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class="hi-only">📊 डैशबोर्ड</span><span class="en-only">📊 Dashboard</span>{% endblock %}
+{% block page_sub %}<span class="hi-only">आज का सारांश</span><span class="en-only">Today's Overview</span>{% endblock %}
+{% block page_breadcrumb %}<span class="hi-only">डैशबोर्ड</span><span class="en-only">dashboard</span>{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block page_actions %}
+<div style="display:flex;gap:10px;">
+    <a href="/excel/" class="btn btn-outline">📥 <span class="hi-only">Excel</span><span class="en-only">Import</span></a>
+    <a href="/goats/" class="btn btn-primary">➕ <span class="hi-only">बकरी जोड़ें</span><span class="en-only">Add Goat</span></a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+.dash-grid { display:grid; grid-template-columns:1.5fr 1fr; gap:1.25rem; margin-bottom:1.25rem; }
+.dash-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem; margin-bottom:1.25rem; }
+.card-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-bottom:1px solid var(--border); }
+.card-title { font-size:0.88rem; font-weight:700; color:var(--text); display:flex; align-items:center; gap:7px; }
+.card-sub { font-size:0.68rem; color:var(--text-dim); margin-top:2px; }
+.card-action { font-size:0.72rem; color:var(--primary); text-decoration:none; font-weight:600; }
+.tag-pill { font-family:'JetBrains Mono',monospace; font-size:0.7rem; background:var(--bg3); color:var(--text-dim); padding:2px 7px; border-radius:5px; border:1px solid var(--border); }
+.delivery-item { display:flex; align-items:center; justify-content:space-between; padding:0.85rem 1.25rem; border-bottom:1px solid var(--border); }
+.delivery-item:last-child { border-bottom:none; }
+.days-count { font-family:'JetBrains Mono',monospace; font-size:1.3rem; font-weight:700; color:var(--amber); }
+.alert-item { display:flex; align-items:center; gap:10px; padding:0.8rem 1.25rem; border-bottom:1px solid var(--border); }
+.alert-item:last-child { border-bottom:none; }
+.alert-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.milk-bar { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.bar-track { flex:1; height:7px; background:var(--bg3); border-radius:10px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:10px; transition:width 1s ease; }
+@media(max-width:900px){.dash-grid,.dash-grid-3{grid-template-columns:1fr;}}
+{% endblock %}
+
+{% block content %}
+<!-- STATS ROW -->
+<div class="stats-grid" style="margin-bottom:1.25rem;" id="statsGrid">
+    <div class="stat-card green"><div class="stat-icon-wrap">🐐</div><div class="stat-value" id="s-total">—</div><div class="stat-label"><span class="hi-only">कुल बकरियां</span><span class="en-only">Total Goats</span></div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">✅</div><div class="stat-value" id="s-active">—</div><div class="stat-label"><span class="hi-only">सक्रिय</span><span class="en-only">Active</span></div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">🤰</div><div class="stat-value" id="s-pregnant">—</div><div class="stat-label"><span class="hi-only">गर्भवती</span><span class="en-only">Pregnant</span></div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">🥛</div><div class="stat-value" id="s-milk">—L</div><div class="stat-label"><span class="hi-only">आज का दूध</span><span class="en-only">Today's Milk</span></div></div>
+    <div class="stat-card green"><div class="stat-icon-wrap">💰</div><div class="stat-value" id="s-sales">₹—</div><div class="stat-label"><span class="hi-only">इस माह बिक्रय</span><span class="en-only">Monthly Sales</span></div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">📈</div><div class="stat-value" id="s-health">—</div><div class="stat-label"><span class="hi-only">स्वास्थ्य रिकॉर्ड</span><span class="en-only">Health Records</span></div></div>
+</div>
+
+<div class="dash-grid">
+    <!-- GOATS TABLE -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🐐 <div><div><span class="hi-only">हाल की बकरियां</span><span class="en-only">Recent Goats</span></div><div class="card-sub en-only">हाल की बकरियां</div><div class="card-sub hi-only">Recent Goats</div></div></div>
+            <a href="/goats/" class="card-action"><span class="hi-only">सभी देखें →</span><span class="en-only">View All →</span></a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr>
+                    <th><span class="hi-only">टैग</span><span class="en-only">Tag</span></th>
+                    <th><span class="hi-only">नाम</span><span class="en-only">Name</span></th>
+                    <th><span class="hi-only">नस्ल</span><span class="en-only">Breed</span></th>
+                    <th><span class="hi-only">स्थिति</span><span class="en-only">Status</span></th>
+                </tr></thead>
+                <tbody id="goatsTbody"><tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RIGHT COL -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+        <!-- MILK -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🥛 <span class="hi-only">आज का दूध</span><span class="en-only">Today's Milk</span></div>
+            </div>
+            <div style="padding:1.25rem;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:2.2rem;font-weight:800;color:var(--text);margin-bottom:1rem;" id="milkTotal">—L</div>
+                <div class="milk-bar">
+                    <span style="font-size:0.72rem;color:var(--text-dim);width:70px;flex-shrink:0;">🌅 <span class="hi-only">सुबह</span><span class="en-only">Morning</span></span>
+                    <div class="bar-track"><div class="bar-fill" id="milkMornBar" style="width:0%;background:linear-gradient(90deg,#f59e0b,#fcd34d);"></div></div>
+                    <span style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);width:40px;text-align:right;" id="milkMornVal">—</span>
+                </div>
+                <div class="milk-bar">
+                    <span style="font-size:0.72rem;color:var(--text-dim);width:70px;flex-shrink:0;">🌆 <span class="hi-only">शाम</span><span class="en-only">Evening</span></span>
+                    <div class="bar-track"><div class="bar-fill" id="milkEvenBar" style="width:0%;background:linear-gradient(90deg,var(--primary),#86efac);"></div></div>
+                    <span style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);width:40px;text-align:right;" id="milkEvenVal">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">⚡ <span class="hi-only">त्वरित क्रियाएं</span><span class="en-only">Quick Actions</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:1.25rem;">
+                <a href="/goats/" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:1rem;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-glow)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                    <span style="font-size:1.4rem;">🐐</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text);">Goats</span>
+                </a>
+                <a href="/milk/" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:1rem;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-glow)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                    <span style="font-size:1.4rem;">🥛</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text);">Milk</span>
+                </a>
+                <a href="/analytics/" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:1rem;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-glow)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                    <span style="font-size:1.4rem;">📊</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text);">Analytics</span>
+                </a>
+                <a href="/ai/" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:1rem;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-glow)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                    <span style="font-size:1.4rem;">🤖</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text);">AI Insights</span>
+                </a>
+                <a href="/invoices/" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:1rem;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-glow)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                    <span style="font-size:1.4rem;">🧾</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text);">Invoices</span>
+                </a>
+                <a href="/qr/" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:1rem;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:all var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-glow)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                    <span style="font-size:1.4rem;">📸</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text);">QR Codes</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid-3">
+    <!-- HEALTH -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🏥 <span class="hi-only">स्वास्थ्य रिकॉर्ड</span><span class="en-only">Health Records</span></div>
+            <a href="/health/" class="card-action"><span class="hi-only">सभी →</span><span class="en-only">All →</span></a>
+        </div>
+        <div id="healthList"></div>
+    </div>
+
+    <!-- UPCOMING DELIVERIES -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🤰 <span class="hi-only">आने वाली डिलीवरी</span><span class="en-only">Upcoming Deliveries</span></div>
+        </div>
+        <div id="deliveryList"></div>
+    </div>
+
+    <!-- RECENT SALES -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">💰 <span class="hi-only">हाल की बिक्रियां</span><span class="en-only">Recent Sales</span></div>
+            <a href="/sales/" class="card-action"><span class="hi-only">सभी →</span><span class="en-only">All →</span></a>
+        </div>
+        <div id="salesList"></div>
+    </div>
+</div>
+
+<div class="card" style="padding:1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <span style="font-size:1rem;">🚀</span>
+    <div style="flex:1;">
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text);">
+            <span class="hi-only">API के साथ integrate करें</span>
+            <span class="en-only">Integrate with our API</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-dim);">30 Models · 100+ Endpoints · Django Ninja · Session Auth</div>
+    </div>
+    <a href="/api/docs/" class="btn btn-primary">📡 API Docs</a>
+    <a href="/admin/" class="btn btn-outline">🔐 Admin</a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+const STATUS_BADGE = {A:'badge-green',P:'badge-pink',S:'badge-amber',D:'badge-gray'};
+const STATUS_LABELS = {A:'Active / सक्रिय',P:'Pregnant / गर्भवती',S:'Sold / बेचा',D:'Dead / मृत'};
+const BREED_MAP = {boer:'Boer',saanen:'Saanen',alpine:'Alpine',nubian:'Nubian',anglo_nubian:'Anglo-Nubian',local:'Local/Desi',sirohi:'Sirohi',barbari:'Barbari',jamunapari:'Jamunapari',beetal:'Beetal'};
+const RT = {V:'💉',D:'🪱',T:'💊',C:'🩺',S:'🔪'};
+
+async function loadDash() {
+    try {
+        const [goats, health, breeding, milk, sales] = await Promise.all([
+            fetch(API+'/goats/').then(r=>r.json()),
+            fetch(API+'/health/').then(r=>r.json()),
+            fetch(API+'/breeding/').then(r=>r.json()),
+            fetch(API+'/milk/').then(r=>r.json()),
+            fetch(API+'/sales/').then(r=>r.json()),
+        ]);
+
+        // Stats
+        document.getElementById('s-total').textContent    = Array.isArray(goats)?goats.length:'—';
+        document.getElementById('s-active').textContent   = Array.isArray(goats)?goats.filter(g=>g.status==='A').length:'—';
+        document.getElementById('s-pregnant').textContent = Array.isArray(goats)?goats.filter(g=>g.status==='P').length:'—';
+        document.getElementById('s-health').textContent   = Array.isArray(health)?health.length:'—';
+
+        // Milk today
+        const today = new Date().toISOString().split('T')[0];
+        const todayMilk = Array.isArray(milk) ? milk.filter(m=>m.date===today) : [];
+        const morn = todayMilk.filter(m=>m.session==='M').reduce((s,m)=>s+m.quantity,0);
+        const even = todayMilk.filter(m=>m.session==='E').reduce((s,m)=>s+m.quantity,0);
+        const total = morn + even;
+        document.getElementById('s-milk').textContent = total.toFixed(1)+'L';
+        document.getElementById('milkTotal').textContent = total.toFixed(1)+'L';
+        const maxQ = Math.max(morn, even) || 1;
+        document.getElementById('milkMornVal').textContent = morn.toFixed(1)+'L';
+        document.getElementById('milkEvenVal').textContent = even.toFixed(1)+'L';
+        setTimeout(()=>{
+            document.getElementById('milkMornBar').style.width = (morn/maxQ*100)+'%';
+            document.getElementById('milkEvenBar').style.width = (even/maxQ*100)+'%';
+        }, 300);
+
+        // Monthly sales
+        const thisMonth = new Date().toISOString().slice(0,7);
+        const monthlySales = Array.isArray(sales) ? sales.filter(s=>s.date&&s.date.startsWith(thisMonth)).reduce((sum,s)=>sum+s.total_amount,0) : 0;
+        document.getElementById('s-sales').textContent = '₹'+Math.round(monthlySales).toLocaleString('en-IN');
+
+        // Goats table
+        const gtb = document.getElementById('goatsTbody');
+        if (Array.isArray(goats) && goats.length) {
+            gtb.innerHTML = goats.slice(0,6).map(g=>`<tr>
+                <td><span class="tag-pill">${g.tag_number}</span></td>
+                <td style="color:var(--text);font-weight:600;">${g.gender==='M'?'♂ ':'♀ '}${g.name}</td>
+                <td>${BREED_MAP[g.breed]||g.breed}</td>
+                <td><span class="badge ${STATUS_BADGE[g.status]||'badge-gray'}">${g.status==='A'?'<span class="hi-only">सक्रिय</span><span class="en-only">Active</span>':g.status==='P'?'<span class="hi-only">गर्भवती</span><span class="en-only">Pregnant</span>':STATUS_LABELS[g.status]||g.status}</span></td>
+            </tr>`).join('');
+        } else {
+            gtb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-dim);">No goats found</td></tr>';
+        }
+
+        // Health
+        const hl = document.getElementById('healthList');
+        if (Array.isArray(health) && health.length) {
+            hl.innerHTML = health.slice(0,4).map(r=>`<div class="delivery-item">
+                <div><div style="font-size:0.82rem;font-weight:600;color:var(--text);">${RT[r.record_type]||''} #${r.goat_id}</div><div style="font-size:0.7rem;color:var(--text-dim);">${r.date} · ₹${r.cost}</div></div>
+                <span style="font-size:0.68rem;color:var(--primary);">${r.medicine_used||'—'}</span>
+            </div>`).join('');
+        } else {
+            hl.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);font-size:0.8rem;">No health records</div>';
+        }
+
+        // Deliveries
+        const dl = document.getElementById('deliveryList');
+        const upcoming = Array.isArray(breeding) ? breeding.filter(b=>b.status==='P'||b.status==='C').slice(0,4) : [];
+        if (upcoming.length) {
+            dl.innerHTML = upcoming.map(b=>{
+                const daysLeft = Math.ceil((new Date(b.expected_delivery_date)-new Date())/(1000*86400));
+                return `<div class="delivery-item">
+                    <div><div style="font-size:0.82rem;font-weight:600;color:var(--text);">🐐 #${b.mother_id} × #${b.father_id}</div><div style="font-size:0.7rem;color:var(--text-dim);">${b.expected_delivery_date}</div></div>
+                    <div style="text-align:right;"><div class="days-count">${daysLeft}</div><div style="font-size:0.6rem;color:var(--text-dim);">days left</div></div>
+                </div>`;
+            }).join('');
+        } else {
+            dl.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);font-size:0.8rem;">No upcoming deliveries</div>';
+        }
+
+        // Sales
+        const sl = document.getElementById('salesList');
+        if (Array.isArray(sales) && sales.length) {
+            sl.innerHTML = sales.slice(0,4).map(s=>`<div class="delivery-item">
+                <div><div style="font-size:0.82rem;font-weight:600;color:var(--text);">${s.buyer_name}</div><div style="font-size:0.7rem;color:var(--text-dim);">${s.date} · ${s.get_sale_type_display||s.sale_type}</div></div>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:700;color:var(--primary);">₹${Math.round(s.total_amount).toLocaleString('en-IN')}</span>
+            </div>`).join('');
+        } else {
+            sl.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);font-size:0.8rem;">No sales records</div>';
+        }
+
+    } catch(err) {
+        console.error('Dashboard load error:', err);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', loadDash);
+{% endblock %}

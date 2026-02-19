@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐐 Goat Farm API — Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #22c55e;
+    --green-dim: #16a34a;
+    --green-glow: rgba(34,197,94,0.15);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --bg: #0a0f0d;
+    --surface: #111a14;
+    --surface2: #162019;
+    --border: rgba(34,197,94,0.18);
+    --text: #e2f0e6;
+    --muted: #6b7c6e;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Sora', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Background pattern */
+  body::before {
+    content:'';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(34,197,94,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 100%, rgba(34,197,94,0.05) 0%, transparent 55%),
+      linear-gradient(rgba(34,197,94,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+
+  /* ===== SIDEBAR ===== */
+  nav {
+    width: 260px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: rgba(10,15,13,0.95);
+    backdrop-filter: blur(20px);
+    padding: 0 0 40px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .nav-logo {
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .nav-logo h1 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -0.3px;
+  }
+  .nav-logo p { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  .nav-section { padding: 4px 12px; margin-top: 8px; }
+  .nav-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 8px;
+  }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #9cad9f;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-link:hover, .nav-link.active {
+    background: var(--green-glow);
+    color: var(--green);
+  }
+  .nav-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-family: var(--mono);
+    background: rgba(34,197,94,0.12);
+    color: var(--green-dim);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .method-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-get { background: var(--blue); }
+  .dot-post { background: var(--green); }
+  .dot-put { background: var(--amber); }
+  .dot-delete { background: var(--red); }
+
+  /* ===== MAIN ===== */
+  main {
+    flex: 1;
+    max-width: 900px;
+    padding: 40px 48px;
+    min-width: 0;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    margin-bottom: 52px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    background: var(--green-glow);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-bottom: 20px;
+  }
+  .hero-tag::before { content:'●'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:0.4 } }
+
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: var(--green); }
+  .hero p { font-size: 16px; color: #8a9f8d; max-width: 560px; line-height: 1.8; }
+
+  .hero-links {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: #0a0f0d;
+  }
+  .btn-primary:hover { background: #4ade80; transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--green-glow); }
+
+  /* ===== BASE URL BOX ===== */
+  .base-url-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 28px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .base-url-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .base-url-val { font-family: var(--mono); font-size: 14px; color: var(--green); }
+
+  /* ===== SECTION ===== */
+  .section { margin-bottom: 56px; scroll-margin-top: 20px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--green-glow);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .section-desc {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+
+  /* ===== ENDPOINT CARD ===== */
+  .endpoint {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .endpoint-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .endpoint-head:hover { background: var(--surface2); }
+  .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    min-width: 52px;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .GET    { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .POST   { background: rgba(34,197,94,0.15);  color: #4ade80; }
+  .PUT    { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .DELETE { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+  .endpoint-path {
+    font-family: var(--mono);
+    font-size: 14px;
+    flex: 1;
+  }
+  .endpoint-path .param { color: var(--amber); }
+  .endpoint-summary {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+    text-align: right;
+  }
+  .endpoint-toggle {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .endpoint.open .endpoint-toggle { transform: rotate(180deg); }
+
+  .endpoint-body {
+    display: none;
+    padding: 0 18px 18px;
+    border-top: 1px solid var(--border);
+  }
+  .endpoint.open .endpoint-body { display: block; }
+
+  .auth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin: 14px 0 12px;
+  }
+  .auth-required { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+  .auth-public   { background: rgba(34,197,94,0.10);  color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+
+  .info-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 14px 0 8px;
+  }
+  .desc-text { font-size: 13px; color: #9cad9f; line-height: 1.7; }
+
+  /* Code blocks */
+  pre {
+    background: #0d1510;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: #c8d8cc;
+    margin: 8px 0;
+  }
+  .k { color: #4ade80; }  /* key */
+  .s { color: #fbbf24; }  /* string value */
+  .n { color: #60a5fa; }  /* number */
+  .c { color: #6b7c6e; }  /* comment */
+  .m { color: var(--amber); }  /* method / type */
+  .r { color: #f87171; }  /* required */
+  .o { color: var(--purple); }  /* optional */
+
+  /* Param table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(34,197,94,0.07);
+    vertical-align: top;
+  }
+  td:first-child { font-family: var(--mono); color: var(--amber); font-size: 12px; }
+  td:nth-child(2) { color: #60a5fa; font-family: var(--mono); font-size: 12px; }
+  td:last-child { color: #9cad9f; font-size: 12px; }
+  .req { color: var(--red); font-size: 10px; font-weight: 700; }
+  .opt { color: var(--muted); font-size: 10px; }
+
+  /* ===== QUICK START ===== */
+  .steps { counter-reset: step; }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .step-num {
+    counter-increment: step;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--green-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-num::before { content: counter(step); }
+  .step-content h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .step-content p { font-size: 13px; color: #9cad9f; margin-bottom: 10px; }
+
+  /* Alerts */
+  .alert {
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    margin: 12px 0;
+    display: flex;
+    gap: 10px;
+  }
+  .alert-info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+  .alert-warn { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d; }
+  .alert-success { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); color: #86efac; }
+
+  /* ===== COPY button ===== */
+  .code-wrap { position: relative; }
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(34,197,94,0.12);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: rgba(34,197,94,0.25); }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    nav { display: none; }
+    main { padding: 24px 20px; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ===== SIDEBAR ===== -->
+<nav>
+  <div class="nav-logo">
+    <h1>🐐 Farm API</h1>
+    <p>v5.4 — Session Auth</p>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Getting Started</div>
+    <a class="nav-link active" href="#quickstart">⚡ Quick Start</a>
+    <a class="nav-link" href="#auth">🔐 Authentication</a>
+    <a class="nav-link" href="#errors">⚠️ Errors & Codes</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Core Resources</div>
+    <a class="nav-link" href="#goats"><span class="method-dot dot-get"></span> Goats <span class="nav-badge">5</span></a>
+    <a class="nav-link" href="#breeding"><span class="method-dot dot-get"></span> Breeding <span class="nav-badge">5</span></a>
+    <a class="nav-link" href="#health"><span class="method-dot dot-get"></span> Health <span class="nav-badge">5</span></a>
+    <a class="nav-link" href="#milk"><span class="method-dot dot-get"></span> Milk <span class="nav-badge">5</span></a>
+    <a class="nav-link" href="#sales"><span class="method-dot dot-get"></span> Sales <span class="nav-badge">5</span></a>
+    <a class="nav-link" href="#expenses"><span class="method-dot dot-get"></span> Expenses <span class="nav-badge">5</span></a>
+    <a class="nav-link" href="#weight"><span class="method-dot dot-get"></span> Weight <span class="nav-badge">5</span></a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Analytics</div>
+    <a class="nav-link" href="#stats">📊 Stats & Reports</a>
+    <a class="nav-link" href="#performance">🏆 Performance</a>
+    <a class="nav-link" href="#market">📈 Market Prices</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Operations</div>
+    <a class="nav-link" href="#weather">🌤️ Weather</a>
+    <a class="nav-link" href="#reminders">🔔 Reminders</a>
+    <a class="nav-link" href="#notifications">📬 Notifications</a>
+    <a class="nav-link" href="#events">📅 Farm Events</a>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">Live API Documentation</div>
+    <h1>Goat Farm<br><span>Management API</span></h1>
+    <p>Django Ninja se bana hua REST API — Session-based authentication ke saath. Sabhi endpoints JSON return karte hain.</p>
+
+    <div class="hero-links">
+      <a class="btn btn-primary" href="/api/docs/" target="_blank">📖 Swagger UI kholein</a>
+      <a class="btn btn-outline" href="/api/openapi.json" target="_blank">⬇ OpenAPI JSON</a>
+    </div>
+
+    <div class="base-url-box">
+      <span class="base-url-label">Base URL</span>
+      <span class="base-url-val">http://localhost:8000/api</span>
+    </div>
+  </div>
+
+  <!-- ===== QUICK START ===== -->
+  <div class="section" id="quickstart">
+    <div class="section-header">
+      <div class="section-icon">⚡</div>
+      <div class="section-title">Quick Start</div>
+    </div>
+    <p class="section-desc">5 minute mein API use karna shuru karein — neeche steps follow karein.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-content">
+          <h4>Login karein — Session cookie milegi</h4>
+          <p>Pehli request mein login karein. Browser automatically session cookie save kar lega.</p>
+          <div class="code-wrap">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="c"># Curl se login</span>
+curl -c cookies.txt -X POST http://localhost:8000/api/auth/login/ \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d '<span class="s">{"username": "admin", "password": "yourpassword"}</span>'
+
+<span class="c"># Response:</span>
+{
+  <span class="k">"access_token"</span>: <span class="s">"session-based"</span>,
+  <span class="k">"token_type"</span>: <span class="s">"session"</span>,
+  <span class="k">"username"</span>: <span class="s">"admin"</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-content">
+          <h4>API call karein</h4>
+          <p>Cookies.txt use karo — session automatically send hogi.</p>
+          <div class="code-wrap">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="c"># Sabhi goats ki list</span>
+curl -b cookies.txt http://localhost:8000/api/goats/
+
+<span class="c"># Response:</span>
+{
+  <span class="k">"count"</span>: <span class="n">24</span>,
+  <span class="k">"items"</span>: [
+    {
+      <span class="k">"id"</span>: <span class="n">1</span>,
+      <span class="k">"tag_number"</span>: <span class="s">"G-001"</span>,
+      <span class="k">"name"</span>: <span class="s">"Kali"</span>,
+      <span class="k">"breed"</span>: <span class="s">"boer"</span>,
+      <span class="k">"age_months"</span>: <span class="n">18</span>,
+      <span class="k">"age_years"</span>: <span class="n">1</span>
+    }
+  ]
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-content">
+          <h4>JavaScript/Fetch se use karein</h4>
+          <p>Browser se karte hain toh credentials automatically jaate hain (same origin).</p>
+          <div class="code-wrap">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="c">// Login</span>
+<span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">'/api/auth/login/'</span>, {
+  method: <span class="s">'POST'</span>,
+  headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> },
+  body: JSON.stringify({ username: <span class="s">'admin'</span>, password: <span class="s">'pass'</span> }),
+  credentials: <span class="s">'include'</span>
+});
+
+<span class="c">// Phir data fetch karein</span>
+<span class="k">const</span> goats = <span class="k">await</span> fetch(<span class="s">'/api/goats/'</span>, {
+  credentials: <span class="s">'include'</span>
+}).then(r => r.json());
+
+<span class="c">// Pagination ke saath</span>
+<span class="k">const</span> page2 = <span class="k">await</span> fetch(<span class="s">'/api/goats/?page=2'</span>, {
+  credentials: <span class="s">'include'</span>
+}).then(r => r.json());</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-content">
+          <h4>CSRF Token (POST/PUT/DELETE ke liye)</h4>
+          <p>Django ke forms/API POST requests mein CSRF token zaruri hai.</p>
+          <div class="code-wrap">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="c">// Cookie se CSRF token nikalo</span>
+<span class="k">function</span> getCsrf() {
+  <span class="k">return</span> document.cookie.split(';')
+    .find(c => c.trim().startsWith(<span class="s">'csrftoken='</span>))
+    ?.split(<span class="s">'='</span>)[<span class="n">1</span>] || <span class="s">''</span>;
+}
+
+<span class="c">// POST request</span>
+<span class="k">await</span> fetch(<span class="s">'/api/goats/'</span>, {
+  method: <span class="s">'POST'</span>,
+  headers: {
+    <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span>,
+    <span class="s">'X-CSRFToken'</span>: getCsrf()
+  },
+  body: JSON.stringify({ tag_number: <span class="s">'G-025'</span>, name: <span class="s">'Gauri'</span>, ... }),
+  credentials: <span class="s">'include'</span>
+});</pre>
+          </div>
+          <div class="alert alert-info">💡 Swagger UI (<code>/api/docs/</code>) mein CSRF automatically handle hota hai — wahan directly try karein.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AUTH ===== -->
+  <div class="section" id="auth">
+    <div class="section-header">
+      <div class="section-icon">🔐</div>
+      <div class="section-title">Authentication</div>
+    </div>
+    <p class="section-desc">Yeh API Django Session Authentication use karti hai. Login ke baad session cookie sab requests mein automatically jaati hai. JWT nahi hai.</p>
+
+    <div class="alert alert-success">✅ <strong>Public endpoints</strong> (login ki zarurat nahi): <code>/api/</code>, <code>/api/auth/login/</code>, <code>/api/weather/*</code></div>
+    <div class="alert alert-warn">🔒 <strong>Protected endpoints</strong> (login required): Baaki sab — goats, health, milk, sales, stats, etc.</div>
+
+    <!-- Login -->
+    <div class="endpoint open">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/auth/login/</span>
+        <span class="endpoint-summary">Login — session cookie milegi</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-public">🌐 Public — login ki zarurat nahi</span>
+        <div class="info-label">Request Body</div>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Details</th></tr>
+          <tr><td>username</td><td>string</td><td><span class="req">REQUIRED</span> — Django admin username</td></tr>
+          <tr><td>password</td><td>string</td><td><span class="req">REQUIRED</span> — Password</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>POST /api/auth/login/
+{
+  <span class="k">"username"</span>: <span class="s">"admin"</span>,
+  <span class="k">"password"</span>: <span class="s">"yourpassword"</span>
+}
+
+<span class="c">// 200 Response:</span>
+{ <span class="k">"access_token"</span>: <span class="s">"session-based"</span>, <span class="k">"token_type"</span>: <span class="s">"session"</span>, <span class="k">"username"</span>: <span class="s">"admin"</span> }
+
+<span class="c">// 401 Response:</span>
+{ <span class="k">"detail"</span>: <span class="s">"Invalid username ya password."</span> }</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/auth/logout/</span>
+        <span class="endpoint-summary">Logout — session destroy</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-public">🌐 Public</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>POST /api/auth/logout/
+<span class="c">// Response:</span>
+{ <span class="k">"detail"</span>: <span class="s">"Logged out successfully."</span> }</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Me -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/auth/me/</span>
+        <span class="endpoint-summary">Apni profile dekhein</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/auth/me/
+<span class="c">// Response:</span>
+{ <span class="k">"id"</span>: <span class="n">1</span>, <span class="k">"username"</span>: <span class="s">"admin"</span>, <span class="k">"email"</span>: <span class="s">"..."</span>, <span class="k">"is_staff"</span>: <span class="n">true</span> }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GOATS ===== -->
+  <div class="section" id="goats">
+    <div class="section-header">
+      <div class="section-icon">🐐</div>
+      <div class="section-title">Goats (बकरियां)</div>
+    </div>
+    <p class="section-desc">Bkariyon ka poora record — add, search, update, delete. Response mein <code>age_months</code> aur <code>age_years</code> automatically calculate ho ke aata hai.</p>
+
+    <!-- List -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/goats/</span>
+        <span class="endpoint-summary">Sabhi bkariyon ki list (paginated)</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="info-label">Query Parameters</div>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Details</th></tr>
+          <tr><td>page</td><td>int</td><td><span class="opt">optional</span> — Page number (default: 1)</td></tr>
+          <tr><td>search</td><td>string</td><td><span class="opt">optional</span> — Tag number ya naam se dhundho</td></tr>
+          <tr><td>status</td><td>string</td><td><span class="opt">optional</span> — A (Active), P (Pregnant), S (Sold), D (Dead)</td></tr>
+          <tr><td>breed</td><td>string</td><td><span class="opt">optional</span> — boer, saanen, nubian, local, etc.</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/goats/
+GET /api/goats/?search=kali&status=A
+GET /api/goats/?breed=boer&page=2
+
+<span class="c">// Response:</span>
+{
+  <span class="k">"count"</span>: <span class="n">24</span>,
+  <span class="k">"items"</span>: [{
+    <span class="k">"id"</span>: <span class="n">1</span>, <span class="k">"tag_number"</span>: <span class="s">"G-001"</span>, <span class="k">"name"</span>: <span class="s">"Kali"</span>,
+    <span class="k">"breed"</span>: <span class="s">"boer"</span>, <span class="k">"gender"</span>: <span class="s">"F"</span>, <span class="k">"status"</span>: <span class="s">"A"</span>,
+    <span class="k">"age_months"</span>: <span class="n">18</span>, <span class="k">"age_years"</span>: <span class="n">1</span>,
+    <span class="k">"weight"</span>: <span class="n">32.5</span>, <span class="k">"purchase_price"</span>: <span class="n">8000.0</span>
+  }]
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/goats/</span>
+        <span class="endpoint-summary">Nayi bkari add karein</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="info-label">Request Fields</div>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Details</th></tr>
+          <tr><td>tag_number</td><td>string</td><td><span class="req">REQUIRED</span> — Unique ID, e.g. "G-025"</td></tr>
+          <tr><td>name</td><td>string</td><td><span class="req">REQUIRED</span> — Bkari ka naam</td></tr>
+          <tr><td>breed</td><td>string</td><td><span class="req">REQUIRED</span> — boer / saanen / nubian / local etc.</td></tr>
+          <tr><td>gender</td><td>string</td><td><span class="req">REQUIRED</span> — "M" (Male) ya "F" (Female)</td></tr>
+          <tr><td>color</td><td>string</td><td><span class="req">REQUIRED</span> — Rang</td></tr>
+          <tr><td>date_of_birth</td><td>date</td><td><span class="req">REQUIRED</span> — Format: YYYY-MM-DD</td></tr>
+          <tr><td>weight</td><td>float</td><td><span class="req">REQUIRED</span> — Vajan kg mein</td></tr>
+          <tr><td>purchase_date</td><td>date</td><td><span class="req">REQUIRED</span> — Kharidne ki tarikh</td></tr>
+          <tr><td>purchase_price</td><td>float</td><td><span class="req">REQUIRED</span> — Kharidne ka mol (₹)</td></tr>
+          <tr><td>status</td><td>string</td><td><span class="opt">optional</span> — A/P/S/D (default: "A")</td></tr>
+          <tr><td>mother_id</td><td>int</td><td><span class="opt">optional</span> — Maa ka ID</td></tr>
+          <tr><td>father_id</td><td>int</td><td><span class="opt">optional</span> — Baap ka ID</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>POST /api/goats/
+{
+  <span class="k">"tag_number"</span>: <span class="s">"G-025"</span>,
+  <span class="k">"name"</span>: <span class="s">"Gauri"</span>,
+  <span class="k">"breed"</span>: <span class="s">"boer"</span>,
+  <span class="k">"gender"</span>: <span class="s">"F"</span>,
+  <span class="k">"color"</span>: <span class="s">"white"</span>,
+  <span class="k">"date_of_birth"</span>: <span class="s">"2023-06-15"</span>,
+  <span class="k">"weight"</span>: <span class="n">28.5</span>,
+  <span class="k">"purchase_date"</span>: <span class="s">"2023-08-01"</span>,
+  <span class="k">"purchase_price"</span>: <span class="n">9500.0</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/goats/<span class="param">{id}</span>/</span>
+        <span class="endpoint-summary">Ek bkari ki detail</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/goats/5/</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goat Stats -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/goats/<span class="param">{id}</span>/stats/</span>
+        <span class="endpoint-summary">🆕 Bkari ki performance summary</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <p class="desc-text">Milk total, weight gain, health cost, breeding count, vaccination alerts — sab ek hi response mein.</p>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/goats/5/stats/
+
+<span class="c">// Response:</span>
+{
+  <span class="k">"goat_id"</span>: <span class="n">5</span>,
+  <span class="k">"name"</span>: <span class="s">"Gauri"</span>,
+  <span class="k">"age_months"</span>: <span class="n">20</span>,
+  <span class="k">"current_weight"</span>: <span class="n">35.2</span>,
+  <span class="k">"weight_gain_kg"</span>: <span class="n">6.7</span>,
+  <span class="k">"total_milk_liters"</span>: <span class="n">142.5</span>,
+  <span class="k">"total_health_cost"</span>: <span class="n">1200.0</span>,
+  <span class="k">"breeding_count"</span>: <span class="n">2</span>,
+  <span class="k">"kids_count"</span>: <span class="n">3</span>,
+  <span class="k">"is_insured"</span>: <span class="n">true</span>,
+  <span class="k">"has_overdue_vaccination"</span>: <span class="n">false</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method PUT">PUT</span>
+        <span class="endpoint-path">/goats/<span class="param">{id}</span>/</span>
+        <span class="endpoint-summary">Bkari ki jaankari update karein</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="alert alert-info">💡 Sirf woh fields bhejen jo badalni hain — baaki same rehenge.</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>PUT /api/goats/5/
+{ <span class="k">"weight"</span>: <span class="n">35.2</span>, <span class="k">"status"</span>: <span class="s">"P"</span> }  <span class="c">// Pregnancy update</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete -->
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method DELETE">DELETE</span>
+        <span class="endpoint-path">/goats/<span class="param">{id}</span>/</span>
+        <span class="endpoint-summary">Bkari record hatao</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="alert alert-warn">⚠️ Delete karne se related health, milk, breeding records bhi delete ho sakte hain.</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>DELETE /api/goats/5/
+<span class="c">// Response:</span>
+{ <span class="k">"deleted"</span>: <span class="n">true</span>, <span class="k">"id"</span>: <span class="n">5</span> }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SALES ===== -->
+  <div class="section" id="sales">
+    <div class="section-header">
+      <div class="section-icon">💰</div>
+      <div class="section-title">Sales (बिक्रय)</div>
+    </div>
+    <p class="section-desc"><strong>🤖 Auto-calculate:</strong> <code>total_amount</code> likhne ki zarurat nahi — API automatically <code>quantity × price_per_unit</code> calculate kar leta hai. Goat sale karne par bkari ka status automatically <em>Sold</em> ho jaata hai.</p>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/sales/</span>
+        <span class="endpoint-summary">Naya sale record</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="info-label">Request Fields</div>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Details</th></tr>
+          <tr><td>sale_type</td><td>string</td><td><span class="req">REQUIRED</span> — G (Goat), M (Milk), MN (Manure), O (Other)</td></tr>
+          <tr><td>date</td><td>date</td><td><span class="req">REQUIRED</span> — YYYY-MM-DD</td></tr>
+          <tr><td>quantity</td><td>float</td><td><span class="req">REQUIRED</span> — Quantity</td></tr>
+          <tr><td>unit</td><td>string</td><td><span class="req">REQUIRED</span> — e.g. "kg", "liter", "piece"</td></tr>
+          <tr><td>price_per_unit</td><td>float</td><td><span class="req">REQUIRED</span> — Ek unit ka daam (₹)</td></tr>
+          <tr><td>buyer_name</td><td>string</td><td><span class="req">REQUIRED</span> — Khareedne wale ka naam</td></tr>
+          <tr><td>goat_id</td><td>int</td><td><span class="opt">optional</span> — Sirf Goat sale ke liye</td></tr>
+          <tr><td>payment_status</td><td>string</td><td><span class="opt">optional</span> — P (Paid), UP (Unpaid), PA (Partial)</td></tr>
+          <tr><td>total_amount</td><td>float</td><td><span class="opt">optional</span> — Auto-calculated, likhne ki zarurat nahi ✨</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>POST /api/sales/
+{
+  <span class="k">"sale_type"</span>: <span class="s">"M"</span>,
+  <span class="k">"date"</span>: <span class="s">"2026-02-18"</span>,
+  <span class="k">"quantity"</span>: <span class="n">10.5</span>,
+  <span class="k">"unit"</span>: <span class="s">"liter"</span>,
+  <span class="k">"price_per_unit"</span>: <span class="n">60.0</span>,
+  <span class="k">"buyer_name"</span>: <span class="s">"Ramesh Sharma"</span>
+  <span class="c">// total_amount auto = 10.5 × 60 = ₹630 ✨</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/sales/</span>
+        <span class="endpoint-summary">Sales list (filter available)</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Details</th></tr>
+          <tr><td>goat_id</td><td>int</td><td><span class="opt">optional</span> — Ek bkari ki sales</td></tr>
+          <tr><td>payment_status</td><td>string</td><td><span class="opt">optional</span> — P / UP / PA</td></tr>
+          <tr><td>page</td><td>int</td><td><span class="opt">optional</span></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATS ===== -->
+  <div class="section" id="stats">
+    <div class="section-header">
+      <div class="section-icon">📊</div>
+      <div class="section-title">Stats & Reports</div>
+    </div>
+    <p class="section-desc">Farm ki puri financial aur operational report — dashboard ke liye ready data.</p>
+
+    <div class="endpoint open">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/stats/dashboard/</span>
+        <span class="endpoint-summary">Complete dashboard stats</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/stats/dashboard/
+
+<span class="c">// Response:</span>
+{
+  <span class="c">// Goat counts</span>
+  <span class="k">"total_goats"</span>: <span class="n">45</span>,         <span class="k">"active_goats"</span>: <span class="n">38</span>,
+  <span class="k">"pregnant_goats"</span>: <span class="n">5</span>,       <span class="k">"sold_goats"</span>: <span class="n">6</span>,   <span class="k">"dead_goats"</span>: <span class="n">1</span>,
+
+  <span class="c">// Financials (all time)</span>
+  <span class="k">"total_revenue"</span>: <span class="n">185000.0</span>,  <span class="k">"total_expenses"</span>: <span class="n">92000.0</span>,
+  <span class="k">"net_profit"</span>: <span class="n">93000.0</span>,
+  <span class="k">"total_milk_production_liters"</span>: <span class="n">1240.5</span>,
+
+  <span class="c">// This month</span>
+  <span class="k">"this_month_revenue"</span>: <span class="n">12000.0</span>,
+  <span class="k">"this_month_expenses"</span>: <span class="n">5500.0</span>,
+  <span class="k">"this_month_profit"</span>: <span class="n">6500.0</span>,
+
+  <span class="c">// Alerts</span>
+  <span class="k">"upcoming_vaccinations"</span>: <span class="n">3</span>,
+  <span class="k">"upcoming_deliveries"</span>: <span class="n">2</span>,
+  <span class="k">"overdue_tasks"</span>: <span class="n">1</span>,
+  <span class="k">"unpaid_sales"</span>: <span class="n">2</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/stats/profit-loss/</span>
+        <span class="endpoint-summary">Monthly Profit & Loss</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Details</th></tr>
+          <tr><td>year</td><td>int</td><td><span class="req">REQUIRED</span> — e.g. 2026</td></tr>
+          <tr><td>month</td><td>int</td><td><span class="req">REQUIRED</span> — 1–12</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/stats/profit-loss/?year=2026&month=2
+
+<span class="c">// Response:</span>
+{
+  <span class="k">"year"</span>: <span class="n">2026</span>, <span class="k">"month"</span>: <span class="n">2</span>,
+  <span class="k">"total_income"</span>: <span class="n">18500.0</span>,
+  <span class="k">"total_expense"</span>: <span class="n">7200.0</span>,
+  <span class="k">"net_profit"</span>: <span class="n">11300.0</span>,
+  <span class="k">"is_profitable"</span>: <span class="n">true</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/stats/monthly-income/</span>
+        <span class="endpoint-summary">Monthly income breakdown</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/stats/monthly-income/?year=2026&month=2
+<span class="c">// Response:</span>
+{ <span class="k">"sales_income"</span>: <span class="n">16000.0</span>, <span class="k">"additional_income"</span>: <span class="n">2500.0</span>, <span class="k">"total"</span>: <span class="n">18500.0</span> }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WEATHER ===== -->
+  <div class="section" id="weather">
+    <div class="section-header">
+      <div class="section-icon">🌤️</div>
+      <div class="section-title">Weather (मौसम)</div>
+    </div>
+    <p class="section-desc">Live weather data — bina login ke access hota hai. 15 min cache TTL. VisualCrossing API use karta hai (<code>WEATHER_API_KEY</code> .env mein chahiye).</p>
+    <div class="alert alert-success">🌐 Yeh endpoints public hain — login ki zarurat nahi hai.</div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/weather/current/</span>
+        <span class="endpoint-summary">Abhi ka mausam</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-public">🌐 Public</span>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Details</th></tr>
+          <tr><td>lat</td><td>float</td><td><span class="opt">optional</span> — Latitude (default: farm location)</td></tr>
+          <tr><td>lng</td><td>float</td><td><span class="opt">optional</span> — Longitude</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/weather/current/
+GET /api/weather/current/?lat=26.92&lng=75.82
+
+<span class="c">// Response:</span>
+{
+  <span class="k">"success"</span>: <span class="n">true</span>,
+  <span class="k">"location"</span>: <span class="s">"Jaipur"</span>,
+  <span class="k">"temperature"</span>: <span class="n">22.4</span>,
+  <span class="k">"humidity"</span>: <span class="n">45</span>,
+  <span class="k">"condition"</span>: <span class="s">"Clear"</span>,
+  <span class="k">"from_cache"</span>: <span class="n">true</span>,
+  <span class="k">"data_age_min"</span>: <span class="n">3</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/weather/forecast/</span>
+        <span class="endpoint-summary">7-din ka forecast</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-public">🌐 Public</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/weather/forecast/
+GET /api/weather/forecast/?days=5</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/weather/health-recommendations/</span>
+        <span class="endpoint-summary">Mausam ke hisab se bkari care tips</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-public">🌐 Public</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/weather/health-recommendations/
+<span class="c">// Response:</span>
+{
+  <span class="k">"temperature"</span>: <span class="n">38.2</span>,
+  <span class="k">"recommendations"</span>: [
+    <span class="s">"🌡️ Garmi zyada hai — paani zyada pilaein"</span>,
+    <span class="s">"🏠 Dhoop mein mat chhodein 12-4 baje"</span>
+  ]
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NOTIFICATIONS ===== -->
+  <div class="section" id="notifications">
+    <div class="section-header">
+      <div class="section-icon">📬</div>
+      <div class="section-title">Notifications (सूचनाएं)</div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="endpoint-path">/notifications/</span>
+        <span class="endpoint-summary">Notifications list</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Details</th></tr>
+          <tr><td>unread_only</td><td>bool</td><td><span class="opt">optional</span> — true = sirf na padhi hui</td></tr>
+        </table>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>GET /api/notifications/
+GET /api/notifications/?unread_only=true</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/notifications/<span class="param">{id}</span>/mark-read/</span>
+        <span class="endpoint-summary">Ek notification mark as read</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>POST /api/notifications/3/mark-read/
+<span class="c">// Response:</span>
+{ <span class="k">"marked_read"</span>: <span class="n">true</span>, <span class="k">"id"</span>: <span class="n">3</span> }</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-head" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="endpoint-path">/notifications/mark-all-read/</span>
+        <span class="endpoint-summary">Sab mark as read</span>
+        <span class="endpoint-toggle">▼</span>
+      </div>
+      <div class="endpoint-body">
+        <span class="auth-badge auth-required">🔒 Login required</span>
+        <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre>POST /api/notifications/mark-all-read/
+<span class="c">// Response:</span>
+{ <span class="k">"marked_read"</span>: <span class="n">12</span> }  <span class="c">// kitni mark hui</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ERRORS ===== -->
+  <div class="section" id="errors">
+    <div class="section-header">
+      <div class="section-icon">⚠️</div>
+      <div class="section-title">HTTP Status Codes</div>
+    </div>
+
+    <table>
+      <tr><th>Code</th><th>Matlab</th><th>Kab aata hai</th></tr>
+      <tr><td>200</td><td>OK</td><td>Request successful</td></tr>
+      <tr><td>201</td><td>Created</td><td>Naya record bana (POST)</td></tr>
+      <tr><td>400</td><td>Bad Request</td><td>Galat data bheja — validation error</td></tr>
+      <tr><td>401</td><td>Unauthorized</td><td>Login nahi kiya / session expire</td></tr>
+      <tr><td>403</td><td>Forbidden</td><td>CSRF token missing (POST/PUT/DELETE)</td></tr>
+      <tr><td>404</td><td>Not Found</td><td>ID galat hai / record nahi mila</td></tr>
+      <tr><td>422</td><td>Unprocessable</td><td>Required field missing</td></tr>
+      <tr><td>500</td><td>Server Error</td><td>Server side kuch gaya — logs dekho</td></tr>
+    </table>
+
+    <div class="info-label" style="margin-top:20px">Error Response Format</div>
+    <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="c">// Validation error (422):</span>
+{ <span class="k">"detail"</span>: [{ <span class="k">"loc"</span>: [<span class="s">"body"</span>, <span class="s">"tag_number"</span>], <span class="k">"msg"</span>: <span class="s">"field required"</span> }] }
+
+<span class="c">// Auth error (401):</span>
+{ <span class="k">"detail"</span>: <span class="s">"Unauthorized"</span> }
+
+<span class="c">// Not found (404):</span>
+{ <span class="k">"detail"</span>: <span class="s">"Not Found"</span> }</pre>
+    </div>
+  </div>
+
+  <!-- Quick Ref -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">📋</div>
+      <div class="section-title">Quick Reference — Sab Endpoints</div>
+    </div>
+    <div class="code-wrap"><button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<pre><span class="c">// ── AUTH ────────────────────────────────</span>
+<span class="m">GET</span>    /api/                         <span class="c">API info (public)</span>
+<span class="m">POST</span>   /api/auth/login/              <span class="c">Login (public)</span>
+<span class="m">POST</span>   /api/auth/logout/             <span class="c">Logout (public)</span>
+<span class="m">GET</span>    /api/auth/me/                 <span class="c">Apni profile</span>
+<span class="m">GET</span>    /api/docs/                    <span class="c">Swagger UI (public)</span>
+
+<span class="c">// ── GOATS ───────────────────────────────</span>
+<span class="m">GET</span>    /api/goats/                   <span class="c">List (search, status, breed)</span>
+<span class="m">POST</span>   /api/goats/                   <span class="c">Create</span>
+<span class="m">GET</span>    /api/goats/{id}/              <span class="c">Detail</span>
+<span class="m">PUT</span>    /api/goats/{id}/              <span class="c">Update</span>
+<span class="m">DELETE</span> /api/goats/{id}/              <span class="c">Delete</span>
+<span class="m">GET</span>    /api/goats/{id}/stats/        <span class="c">🆕 Performance summary</span>
+
+<span class="c">// ── BREEDING ────────────────────────────</span>
+<span class="m">GET</span>    /api/breeding/                <span class="c">List (status filter)</span>
+<span class="m">POST</span>   /api/breeding/                <span class="c">Create (expected_date optional)</span>
+<span class="m">GET</span>    /api/breeding/{id}/           <span class="c">Detail</span>
+<span class="m">PUT</span>    /api/breeding/{id}/           <span class="c">Update</span>
+<span class="m">DELETE</span> /api/breeding/{id}/           <span class="c">Delete</span>
+
+<span class="c">// ── HEALTH ──────────────────────────────</span>
+<span class="m">GET</span>    /api/health/                  <span class="c">List (goat_id, record_type)</span>
+<span class="m">POST</span>   /api/health/                  <span class="c">Create</span>
+<span class="m">GET</span>    /api/health/{id}/             <span class="c">Detail</span>
+<span class="m">PUT</span>    /api/health/{id}/             <span class="c">Update</span>
+<span class="m">DELETE</span> /api/health/{id}/             <span class="c">Delete</span>
+
+<span class="c">// ── MILK ────────────────────────────────</span>
+<span class="m">GET</span>    /api/milk/                    <span class="c">List (goat_id)</span>
+<span class="m">POST</span>   /api/milk/                    <span class="c">Create (session: M/E)</span>
+<span class="m">GET</span>    /api/milk/{id}/               <span class="c">Detail</span>
+<span class="m">PUT</span>    /api/milk/{id}/               <span class="c">Update</span>
+<span class="m">DELETE</span> /api/milk/{id}/               <span class="c">Delete</span>
+
+<span class="c">// ── SALES ───────────────────────────────</span>
+<span class="m">GET</span>    /api/sales/                   <span class="c">List (goat_id, payment_status)</span>
+<span class="m">POST</span>   /api/sales/                   <span class="c">Create (total_amount auto ✨)</span>
+<span class="m">GET</span>    /api/sales/{id}/              <span class="c">Detail</span>
+<span class="m">PUT</span>    /api/sales/{id}/              <span class="c">Update</span>
+<span class="m">DELETE</span> /api/sales/{id}/              <span class="c">Delete</span>
+
+<span class="c">// ── EXPENSES ────────────────────────────</span>
+<span class="m">GET</span>    /api/expenses/                <span class="c">List (expense_type, date_from, date_to)</span>
+<span class="m">POST</span>   /api/expenses/                <span class="c">Create</span>
+<span class="m">GET</span>    /api/expenses/{id}/           <span class="c">Detail</span>
+<span class="m">PUT</span>    /api/expenses/{id}/           <span class="c">Update</span>
+<span class="m">DELETE</span> /api/expenses/{id}/           <span class="c">Delete</span>
+
+<span class="c">// ── WEIGHT ──────────────────────────────</span>
+<span class="m">GET</span>    /api/weight/                  <span class="c">List (goat_id)</span>
+<span class="m">POST</span>   /api/weight/                  <span class="c">Create</span>
+<span class="m">GET</span>    /api/weight/{id}/             <span class="c">🆕 Detail</span>
+<span class="m">PUT</span>    /api/weight/{id}/             <span class="c">🆕 Update</span>
+<span class="m">DELETE</span> /api/weight/{id}/             <span class="c">Delete</span>
+
+<span class="c">// ── STATS ───────────────────────────────</span>
+<span class="m">GET</span>    /api/stats/dashboard/         <span class="c">Full dashboard (🆕 enhanced)</span>
+<span class="m">GET</span>    /api/stats/monthly-income/    <span class="c">?year=&month=</span>
+<span class="m">GET</span>    /api/stats/monthly-expense/   <span class="c">?year=&month=</span>
+<span class="m">GET</span>    /api/stats/profit-loss/       <span class="c">?year=&month=</span>
+
+<span class="c">// ── WEATHER (public) ─────────────────────</span>
+<span class="m">GET</span>    /api/weather/current/         <span class="c">?lat=&lng=</span>
+<span class="m">GET</span>    /api/weather/forecast/        <span class="c">?days=7</span>
+<span class="m">GET</span>    /api/weather/alerts/
+<span class="m">GET</span>    /api/weather/health-recommendations/
+
+<span class="c">// ── NOTIFICATIONS ────────────────────────</span>
+<span class="m">GET</span>    /api/notifications/           <span class="c">🆕 ?unread_only=true</span>
+<span class="m">POST</span>   /api/notifications/{id}/mark-read/  <span class="c">🆕</span>
+<span class="m">POST</span>   /api/notifications/mark-all-read/   <span class="c">🆕</span>
+
+<span class="c">// ── PERFORMANCE, MARKET, EVENTS, etc ─────</span>
+<span class="m">GET/POST</span> /api/performance/
+<span class="m">GET/DELETE</span> /api/performance/{id}/
+<span class="m">GET/POST</span> /api/market-prices/
+<span class="m">GET/DELETE</span> /api/market-prices/{id}/
+<span class="m">GET/POST</span> /api/breeding-plans/
+<span class="m">GET/POST</span> /api/events/
+<span class="m">GET/POST</span> /api/reminders/
+<span class="m">GET/POST</span> /api/weather-records/</pre>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+function toggle(head) {
+  const card = head.parentElement;
+  card.classList.toggle('open');
+}
+
+function copyCode(btn) {
+  const pre = btn.nextElementSibling;
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+// Active nav link on scroll
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

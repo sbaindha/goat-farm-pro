@@ -1,0 +1,78 @@
+<!-- 
+ADMIN PANEL CODE SNIPPET FOR DASHBOARD
+फाइल: templates/farm/professional_dashboard.html
+
+यह code dashboard के किसी उपयुक्त जगह पर add करो
+(Usually bottom में या main content के बाद)
+-->
+
+<!-- ==================== ADMIN PANEL (Admin Only) ==================== -->
+{% if user.is_staff %}
+<div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <h3 style="margin: 0 0 8px 0; color: white; font-size: 18px;">🔐 Admin Panel</h3>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">
+                Excel downloads, imports, और data backups के लिए
+            </p>
+        </div>
+        <div style="font-size: 40px;">📊</div>
+    </div>
+    <a href="{% url 'admin_excel_page' %}" style="display: inline-block; padding: 12px 24px; 
+       background: white; color: #667eea; text-decoration: none; border-radius: 6px; 
+       font-weight: 600; margin-top: 15px; transition: all 0.3s ease; cursor: pointer;">
+        📊 Excel Management
+    </a>
+    <a href="/admin/" style="display: inline-block; padding: 12px 24px; 
+       background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; 
+       font-weight: 600; margin-top: 15px; margin-left: 10px; transition: all 0.3s ease; cursor: pointer;">
+        ⚙️ Django Admin
+    </a>
+</div>
+{% endif %}
+
+
+<!-- Alternative: Compact Version -->
+<!--
+{% if user.is_staff %}
+<div style="margin-top: 20px; padding: 15px; background: #f5f7fa; 
+            border-left: 4px solid #667eea; border-radius: 4px;">
+    <h4 style="margin: 0 0 10px 0;">🔐 Admin Tools</h4>
+    <a href="{% url 'admin_excel_page' %}" style="display: inline-block; padding: 8px 16px; 
+       background: #667eea; color: white; text-decoration: none; border-radius: 4px; 
+       font-weight: 600; margin-right: 10px;">
+        📊 Excel
+    </a>
+    <a href="/admin/" style="display: inline-block; padding: 8px 16px; 
+       background: #667eea; color: white; text-decoration: none; border-radius: 4px; 
+       font-weight: 600;">
+        ⚙️ Admin
+    </a>
+</div>
+{% endif %}
+-->
+
+
+<!-- How to Add:
+
+1. templates/farm/professional_dashboard.html खोलो
+2. {% extends 'farm/base.html' %} के बाद कहीं भी add कर सकते हो
+   (Usually main content block के अंदर, footer से पहले)
+
+3. Example placement:
+
+   {% block content %}
+   <div class="dashboard-container">
+       ... existing dashboard content ...
+       
+       <!-- यहाँ admin panel code add करो -->
+       {% if user.is_staff %}
+       <div style="margin-top: 30px; padding: 20px; ...">
+           ...
+       </div>
+       {% endif %}
+       
+   </div>
+   {% endblock %}
+-->

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="hi" data-lang="hi" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}🐐 Goat Farm Pro{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Tiro+Devanagari+Hindi&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:           #0a0f0d;
+            --bg2:          #0e1610;
+            --bg3:          #151f15;
+            --card:         #101810;
+            --border:       rgba(74,222,128,0.10);
+            --border-strong:rgba(74,222,128,0.25);
+            --primary:      #4ade80;
+            --primary-dark: #22c55e;
+            --primary-glow: rgba(74,222,128,0.10);
+            --text:         #ddeee2;
+            --text-muted:   #6b9b74;
+            --text-dim:     #415a47;
+            --input-bg:     #182218;
+            --danger:       #ef4444;
+            --danger-glow:  rgba(239,68,68,0.12);
+            --amber:        #f59e0b;
+            --amber-glow:   rgba(245,158,11,0.12);
+            --blue:         #3b82f6;
+            --blue-glow:    rgba(59,130,246,0.12);
+            --pink:         #ec4899;
+            --pink-glow:    rgba(236,72,153,0.12);
+            --radius:       14px;
+            --radius-sm:    8px;
+            --transition:   0.2s ease;
+        }
+        [data-theme="light"] {
+            --bg: #f0faf2; --bg2: #e8f5ea; --bg3: #dceee0; --card: #ffffff;
+            --border: rgba(22,163,74,0.18); --border-strong: rgba(22,163,74,0.40);
+            --primary: #16a34a; --primary-dark: #15803d; --primary-glow: rgba(22,163,74,0.10);
+            --text: #1a2e1c; --text-muted: #3d6b42; --text-dim: #6b9e72; --input-bg: #f0faf2;
+            --danger: #dc2626; --danger-glow: rgba(220,38,38,0.10);
+            --amber: #d97706; --amber-glow: rgba(217,119,6,0.10);
+            --blue: #2563eb; --blue-glow: rgba(37,99,235,0.10);
+            --pink: #db2777; --pink-glow: rgba(219,39,119,0.10);
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+        /* TOPBAR */
+        .topbar { height:58px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; position:sticky; top:0; z-index:200; flex-shrink:0; }
+        .brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .brand-icon { width:36px; height:36px; background:var(--primary); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+        .brand-name { font-weight:800; font-size:1rem; color:var(--text); line-height:1.1; }
+        .brand-sub { font-size:0.6rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+        .topbar-right { display:flex; align-items:center; gap:10px; }
+        .breadcrumb { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-dim); background:var(--bg3); padding:5px 12px; border-radius:6px; border:1px solid var(--border); }
+        .breadcrumb .cur { color:var(--primary); }
+
+        .toggle-group { display:flex; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:3px; gap:2px; }
+        .toggle-btn { padding:4px 10px; border-radius:5px; border:none; background:transparent; color:var(--text-dim); font-size:0.72rem; font-weight:600; cursor:pointer; transition:all var(--transition); font-family:'Plus Jakarta Sans',sans-serif; }
+        .toggle-btn.active { background:var(--primary); color:#fff; }
+        .icon-btn { width:34px; height:34px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.9rem; color:var(--text-muted); transition:all var(--transition); text-decoration:none; }
+        .icon-btn:hover { border-color:var(--primary); color:var(--primary); }
+        .avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--primary-dark),var(--primary)); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff; }
+
+        /* LAYOUT */
+        .layout { display:flex; flex:1; overflow:hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width:220px; background:var(--bg2); border-right:1px solid var(--border); padding:1rem 0.75rem; overflow-y:auto; flex-shrink:0; display:flex; flex-direction:column; gap:2px; }
+        .sidebar-section { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-dim); font-weight:700; padding:0.9rem 0.75rem 0.35rem; margin-top:0.5rem; }
+        .nav-link { display:flex; align-items:center; gap:9px; padding:0.55rem 0.75rem; border-radius:9px; text-decoration:none; color:var(--text-muted); font-size:0.82rem; font-weight:500; transition:all var(--transition); }
+        .nav-link:hover { background:var(--primary-glow); color:var(--primary); }
+        .nav-link.active { background:var(--primary-glow); color:var(--primary); font-weight:700; }
+        .nav-icon { font-size:1rem; width:20px; text-align:center; }
+        .nav-badge { margin-left:auto; background:var(--amber); color:#fff; font-size:0.6rem; font-weight:700; padding:2px 6px; border-radius:20px; }
+
+        /* MAIN */
+        .main-content { flex:1; overflow-y:auto; padding:1.75rem 2rem; }
+        .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
+        .page-title { font-size:1.3rem; font-weight:800; color:var(--text); }
+        .page-sub { font-size:0.78rem; color:var(--text-muted); margin-top:3px; }
+
+        /* CARD */
+        .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+
+        /* STATS */
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; transition:all var(--transition); position:relative; overflow:hidden; }
+        .stat-card::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; opacity:0; transition:opacity var(--transition); }
+        .stat-card:hover { border-color:var(--border-strong); transform:translateY(-2px); }
+        .stat-card:hover::after { opacity:1; }
+        .stat-card.green::after { background:var(--primary); }
+        .stat-card.blue::after  { background:var(--blue); }
+        .stat-card.amber::after { background:var(--amber); }
+        .stat-card.pink::after  { background:var(--pink); }
+        .stat-icon-wrap { font-size:1.3rem; margin-bottom:0.6rem; }
+        .stat-value { font-family:'JetBrains Mono',monospace; font-size:1.6rem; font-weight:700; color:var(--text); line-height:1; }
+        .stat-label { font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem; font-weight:500; }
+
+        /* TABLE */
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; }
+        table th { text-align:left; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.09em; color:var(--text-dim); font-weight:700; padding:0.7rem 1rem; background:var(--bg3); border-bottom:1px solid var(--border); }
+        table td { padding:0.8rem 1rem; border-bottom:1px solid var(--border); font-size:0.83rem; color:var(--text-muted); }
+        table tr:last-child td { border-bottom:none; }
+        table tr:hover td { background:var(--primary-glow); }
+
+        /* BUTTONS */
+        .btn { display:inline-flex; align-items:center; gap:6px; padding:0.55rem 1.1rem; border-radius:var(--radius-sm); border:1px solid transparent; font-family:'Plus Jakarta Sans',sans-serif; font-size:0.82rem; font-weight:600; cursor:pointer; text-decoration:none; transition:all var(--transition); white-space:nowrap; }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-primary:hover { background:var(--primary-dark); transform:translateY(-1px); box-shadow:0 6px 20px var(--primary-glow); }
+        .btn-outline { background:transparent; border-color:var(--border-strong); color:var(--text-muted); }
+        .btn-outline:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-glow); }
+        .btn-danger { background:transparent; border-color:rgba(239,68,68,0.3); color:var(--danger); }
+        .btn-danger:hover { background:var(--danger-glow); }
+        .btn-sm { padding:0.35rem 0.75rem; font-size:0.75rem; }
+
+        /* BADGES */
+        .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.67rem; font-weight:700; }
+        .badge-green { background:rgba(74,222,128,0.10); color:var(--primary); border:1px solid rgba(74,222,128,0.20); }
+        .badge-amber { background:var(--amber-glow); color:var(--amber); border:1px solid rgba(245,158,11,0.2); }
+        .badge-blue  { background:var(--blue-glow);  color:var(--blue);  border:1px solid rgba(59,130,246,0.2); }
+        .badge-pink  { background:var(--pink-glow);  color:var(--pink);  border:1px solid rgba(236,72,153,0.2); }
+        .badge-gray  { background:rgba(255,255,255,0.05); color:var(--text-dim); border:1px solid var(--border); }
+        .badge-red   { background:var(--danger-glow); color:var(--danger); border:1px solid rgba(239,68,68,0.2); }
+
+        /* MODAL */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:500; display:none; align-items:center; justify-content:center; padding:1rem; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:var(--card); border:1px solid var(--border-strong); border-radius:var(--radius); width:100%; max-width:560px; max-height:90vh; overflow-y:auto; padding:1.5rem; animation:modalIn 0.2s ease; }
+        @keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
+        .modal-title { font-size:1rem; font-weight:800; color:var(--text); }
+        .modal-close { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:1.1rem; width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; transition:all var(--transition); }
+        .modal-close:hover { background:var(--danger-glow); color:var(--danger); }
+
+        /* FORMS */
+        .form-group { margin-bottom:0; }
+        .form-label { display:block; font-size:0.72rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:7px; }
+        .form-input,.form-select,.form-textarea { width:100%; background:var(--input-bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; color:var(--text); font-size:0.85rem; font-family:'Plus Jakarta Sans',sans-serif; outline:none; transition:border-color var(--transition),box-shadow var(--transition); }
+        .form-input:focus,.form-select:focus,.form-textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
+        .form-input::placeholder,.form-textarea::placeholder { color:var(--text-dim); }
+        .form-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234a6b50' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; cursor:pointer; }
+        .form-textarea { resize:vertical; min-height:80px; }
+
+        /* TOAST */
+        #toast { position:fixed; bottom:24px; right:24px; z-index:9999; background:var(--card); border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:12px 18px; font-size:0.85rem; font-weight:600; color:var(--text); box-shadow:0 8px 32px rgba(0,0,0,0.4); transform:translateY(80px); opacity:0; transition:all 0.3s ease; max-width:320px; }
+        #toast.show { transform:translateY(0); opacity:1; }
+        #toast.error { border-color:var(--danger); }
+
+        /* LOADING */
+        .loading-dots { display:inline-flex; gap:5px; align-items:center; color:var(--text-dim); font-size:0.82rem; }
+        .loading-dots span { width:6px; height:6px; border-radius:50%; background:var(--primary); animation:bounce 1.2s infinite ease-in-out; }
+        .loading-dots span:nth-child(1){animation-delay:0s} .loading-dots span:nth-child(2){animation-delay:0.2s} .loading-dots span:nth-child(3){animation-delay:0.4s}
+        @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+        /* BILINGUAL */
+        [data-lang="hi"] .en-only { display:none !important; }
+        [data-lang="en"] .hi-only { display:none !important; }
+
+        /* FOOTER */
+        .footer { background:var(--bg2); border-top:1px solid var(--border); text-align:center; padding:0.9rem; font-size:0.7rem; color:var(--text-dim); flex-shrink:0; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar{width:5px;height:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+
+        /* RESPONSIVE */
+        @media(max-width:768px){.sidebar{display:none} .main-content{padding:1rem} .breadcrumb{display:none}}
+
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="/" class="brand">
+            <div class="brand-icon">🐐</div>
+            <div>
+                <div class="brand-name">Goat Farm Pro</div>
+                <div class="brand-sub">v5.5 Ultimate</div>
+            </div>
+        </a>
+        <div class="breadcrumb">
+            <span class="hi-only">बकरी-फार्म</span><span class="en-only">goat-farm</span>
+            / <span class="cur">{% block page_breadcrumb %}home{% endblock %}</span>
+        </div>
+    </div>
+    <!-- WEATHER WIDGET CENTER -->
+    <a href="/weather/" id="topbar-weather" style="display:none;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:6px 14px;text-decoration:none;color:var(--text);font-size:0.82rem;font-weight:600;transition:border-color 0.2s;position:absolute;left:50%;transform:translateX(-50%);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span id="tw-icon" style="font-size:1.1rem;">🌤️</span>
+        <span id="tw-temp" style="font-family:'JetBrains Mono',monospace;color:var(--primary);">--°</span>
+        <span id="tw-desc" style="color:var(--text-muted);font-size:0.75rem;"></span>
+    </a>
+    <div class="topbar-right">
+        {% block weather_widget %}{% endblock %}
+        <div class="toggle-group">
+            <button class="toggle-btn active" id="btn-hi" onclick="setLang('hi')">हिं</button>
+            <button class="toggle-btn" id="btn-en" onclick="setLang('en')">EN</button>
+        </div>
+        <button class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+        <a href="/admin/" class="icon-btn">⚙️</a>
+        <a href="/logout/" class="icon-btn">🚪</a>
+        <div class="avatar">{{ request.user.username|slice:":2"|upper|default:"AD" }}</div>
+    </div>
+</header>
+
+<div class="layout">
+    <aside class="sidebar">
+        <div class="sidebar-section hi-only">मुख्य</div>
+        <div class="sidebar-section en-only">MAIN</div>
+        <a href="/" class="nav-link {% block nav_dashboard %}{% endblock %}"><span class="nav-icon">📊</span><span class="hi-only">डैशबोर्ड</span><span class="en-only">Dashboard</span></a>
+        <a href="/goats/" class="nav-link {% block nav_goats %}{% endblock %}"><span class="nav-icon">🐐</span><span class="hi-only">बकरियां</span><span class="en-only">Goats</span></a>
+        <a href="/breeding/" class="nav-link {% block nav_breeding %}{% endblock %}"><span class="nav-icon">🤰</span><span class="hi-only">प्रजनन</span><span class="en-only">Breeding</span></a>
+        <a href="/health/" class="nav-link {% block nav_health %}{% endblock %}"><span class="nav-icon">🏥</span><span class="hi-only">स्वास्थ्य</span><span class="en-only">Health</span></a>
+        <a href="/milk/" class="nav-link {% block nav_milk %}{% endblock %}"><span class="nav-icon">🥛</span><span class="hi-only">दूध उत्पादन</span><span class="en-only">Milk Production</span></a>
+        <div class="sidebar-section hi-only">वित्त</div>
+        <div class="sidebar-section en-only">FINANCE</div>
+        <a href="/sales/" class="nav-link {% block nav_sales %}{% endblock %}"><span class="nav-icon">💰</span><span class="hi-only">बिक्रय</span><span class="en-only">Sales</span></a>
+        <a href="/expenses/" class="nav-link {% block nav_expenses %}{% endblock %}"><span class="nav-icon">📉</span><span class="hi-only">खर्च</span><span class="en-only">Expenses</span></a>
+        <div class="sidebar-section hi-only">🤖 Analytics & AI</div>
+        <div class="sidebar-section en-only">🤖 ANALYTICS & AI</div>
+        <a href="/analytics/" class="nav-link {% block nav_analytics %}{% endblock %}"><span class="nav-icon">📊</span><span class="hi-only">Analytics</span><span class="en-only">Analytics</span></a>
+        <a href="/ai/" class="nav-link {% block nav_ai %}{% endblock %}"><span class="nav-icon">🤖</span><span class="hi-only">AI Insights</span><span class="en-only">AI Insights</span></a>
+        <a href="/invoices/" class="nav-link {% block nav_invoices %}{% endblock %}"><span class="nav-icon">🧾</span><span class="hi-only">Invoices</span><span class="en-only">Invoices</span></a>
+        <a href="/qr/" class="nav-link {% block nav_qr %}{% endblock %}"><span class="nav-icon">📸</span><span class="hi-only">QR Codes</span><span class="en-only">QR Codes</span></a>
+        <div class="sidebar-section hi-only">उपकरण</div>
+        <div class="sidebar-section en-only">TOOLS</div>
+        <a href="/weather/" class="nav-link {% block nav_weather %}{% endblock %}"><span class="nav-icon">🌦️</span><span class="hi-only">मौसम</span><span class="en-only">Weather</span></a>
+        <a href="/excel/" class="nav-link"><span class="nav-icon">📥</span><span class="hi-only">Excel आयात</span><span class="en-only">Excel Import</span></a>
+        <a href="/backup/" class="nav-link"><span class="nav-icon">📦</span><span class="hi-only">बैकअप</span><span class="en-only">Backup</span></a>
+        <a href="/api/docs/" class="nav-link"><span class="nav-icon">📡</span>API Docs</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+                <div class="page-sub">{% block page_sub %}{% endblock %}</div>
+            </div>
+            {% block page_actions %}{% endblock %}
+        </div>
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<footer class="footer">
+    🐐 <strong>Goat Farm Management System v5.5</strong> · <span class="hi-only">द्विभाषी — हिंदी + English</span><span class="en-only">Bilingual — Hindi + English</span> · © 2026 Open Source
+</footer>
+
+<div id="toast"></div>
+
+<script>
+function setLang(lang){document.documentElement.setAttribute('data-lang',lang);document.getElementById('btn-hi').classList.toggle('active',lang==='hi');document.getElementById('btn-en').classList.toggle('active',lang==='en');localStorage.setItem('farm_lang',lang);}
+function toggleTheme(){const h=document.documentElement;const n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('farm_theme',n);document.getElementById('themeBtn').textContent=n==='dark'?'🌙':'☀️';}
+(function(){const t=localStorage.getItem('farm_theme')||'dark';const l=localStorage.getItem('farm_lang')||'hi';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-lang',l);const b=document.getElementById('themeBtn');if(b)b.textContent=t==='dark'?'🌙':'☀️';const hi=document.getElementById('btn-hi');const en=document.getElementById('btn-en');if(hi)hi.classList.toggle('active',l==='hi');if(en)en.classList.toggle('active',l==='en');})();
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+(type==='error'?'error':'');setTimeout(()=>{t.className='';},3200);}
+function getCookie(n){let v=null;document.cookie.split(';').forEach(c=>{const[k,val]=c.trim().split('=');if(k===n)v=decodeURIComponent(val);});return v;}
+const apiFetch=(url,opts={})=>fetch(url,{...opts,headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken'),...(opts.headers||{})}});
+
+// Topbar weather widget
+(function(){
+  const ICONS={'sunny':'☀️','clear-day':'☀️','clear-night':'🌙','partly-cloudy-day':'⛅','partly-cloudy-night':'🌙','cloudy':'☁️','rain':'🌧️','showers-day':'🌦️','snow':'❄️','wind':'💨','fog':'🌫️','thunderstorm':'⛈️'};
+  function getIcon(cond){if(!cond)return'🌤️';const c=cond.toLowerCase();if(c.includes('thunder'))return'⛈️';if(c.includes('snow'))return'❄️';if(c.includes('rain')||c.includes('shower'))return'🌧️';if(c.includes('fog'))return'🌫️';if(c.includes('wind'))return'💨';if(c.includes('cloud'))return'⛅';if(c.includes('clear')||c.includes('sun'))return'☀️';return'🌤️';}
+  function loadTopbarWeather(lat,lng){
+    fetch('/api/weather/current/?lat='+lat+'&lng='+lng)
+      .then(r=>r.json()).then(d=>{
+        const w=d.data||d;
+        const tw=document.getElementById('topbar-weather');
+        if(!tw)return;
+        document.getElementById('tw-icon').textContent=getIcon(w.condition);
+        document.getElementById('tw-temp').textContent=(w.temperature!=null?Math.round(w.temperature):'--')+'°';
+        document.getElementById('tw-desc').textContent=w.condition||''
+        tw.style.display='flex';
+      }).catch(()=>{});
+  }
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      p=>loadTopbarWeather(p.coords.latitude,p.coords.longitude),
+      ()=>loadTopbarWeather(26.9124,75.7873)
+    );
+  } else {
+    loadTopbarWeather(26.9124,75.7873);
+  }
+})();
+</script>
+<script>
+{% block extra_js %}{% endblock %}
+</script>
+</body>
+</html>

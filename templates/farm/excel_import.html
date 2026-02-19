@@ -1,0 +1,638 @@
+{% extends 'farm/base.html' %}
+{% block title %}Excel Import — Goat Farm Pro{% endblock %}
+{% block page_title %}Excel Import{% endblock %}
+{% block page_breadcrumb %}goat-farm / excel-import{% endblock %}
+{% block nav_excel %}active{% endblock %}
+
+{% block extra_css %}
+.import-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.import-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.import-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.import-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--primary);
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+.import-card:hover::before,
+.import-card.has-file::before {
+    opacity: 1;
+}
+
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.card-emoji { font-size: 2rem; }
+
+.card-info h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.card-info p {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.columns-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+}
+
+.columns-badge strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.upload-zone {
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg3);
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+    border-color: var(--primary);
+    background: var(--primary-glow);
+}
+
+.upload-zone.file-selected {
+    border-color: var(--success);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-icon { font-size: 1.8rem; margin-bottom: 6px; }
+.upload-text { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 3px; }
+.upload-hint { font-size: 0.72rem; color: var(--text-dim); }
+.file-name { font-size: 0.82rem; color: var(--success); font-weight: 600; margin-top: 4px; }
+
+.btn-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.btn-upload {
+    background: var(--primary);
+    color: #000;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 16px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.btn-upload:hover:not(:disabled) {
+    background: var(--primary-hover, #16a34a);
+    transform: translateY(-1px);
+}
+
+.btn-upload:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-template {
+    background: var(--bg3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 9px 14px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: all var(--transition);
+}
+
+.btn-template:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* Result section */
+.import-result {
+    display: none;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.import-result.show { display: block; }
+
+.import-result.success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #86efac;
+}
+
+.import-result.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.import-result.partial {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fcd34d;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.result-title { font-weight: 700; font-size: 0.85rem; }
+
+.result-stats {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+}
+
+.stat-ok { color: #86efac; }
+.stat-fail { color: #fca5a5; }
+
+.error-scroll {
+    max-height: 120px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+    font-size: 0.74rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.error-line {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #fca5a5;
+}
+
+/* Spinner */
+.spinner-mini {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* Template download section */
+.template-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.template-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.tpl-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all var(--transition);
+}
+
+.tpl-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-glow);
+    transform: translateY(-1px);
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.info-banner {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: #93c5fd;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 style="font-size:1.4rem;font-weight:800;color:var(--text);">📊 Excel Bulk Import</h1>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px;">Excel file se ek saath kai records import karein</div>
+    </div>
+</div>
+
+<div class="info-banner">
+    <span style="font-size:1.1rem;flex-shrink:0;">💡</span>
+    <div>
+        <strong>Kaise use karein:</strong> Pehle neeche se template download karein → apna data fill karein → wahi file upar upload karein.
+        Saare columns required hain jab tak optional na likha ho.
+    </div>
+</div>
+
+<!-- TEMPLATES DOWNLOAD -->
+<div class="template-section">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px;">Step 1</div>
+    <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:2px;">📥 Templates Download Karein</div>
+    <div style="font-size:0.8rem;color:var(--text-muted);">Sample data ke saath ready-made templates — inhe Excel mein fill karke upload karein</div>
+    <div class="template-grid">
+        <a href="/excel/template/goats/" class="tpl-btn">🐐 Goats Template</a>
+        <a href="/excel/template/milk/" class="tpl-btn">🥛 Milk Template</a>
+        <a href="/excel/template/sales/" class="tpl-btn">💰 Sales Template</a>
+        <a href="/excel/template/health/" class="tpl-btn">🏥 Health Template</a>
+        <a href="/excel/template/expenses/" class="tpl-btn">📋 Expenses Template</a>
+    </div>
+</div>
+
+<!-- UPLOAD SECTION -->
+<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:12px;">Step 2 — Apni filled Excel file upload karein</div>
+
+<div class="import-grid">
+
+    <!-- GOATS -->
+    <div class="import-card" id="card-goat">
+        <div class="card-head">
+            <div class="card-emoji">🐐</div>
+            <div class="card-info">
+                <h3>Goats Import</h3>
+                <p>नई बकरियां bulk mein add karein</p>
+            </div>
+        </div>
+        <div class="columns-badge">
+            <strong>Required Columns</strong>
+            tag_number · name · breed · gender · color<br>
+            date_of_birth · weight · purchase_date · purchase_price · status
+        </div>
+        <div class="upload-zone" id="zone-goat">
+            <input type="file" id="file-goat" accept=".xlsx,.xls" onchange="onFileSelected('goat', this)">
+            <div class="upload-icon" id="icon-goat">📁</div>
+            <div class="upload-text">Click karein ya file drag karein</div>
+            <div class="upload-hint">.xlsx / .xls format</div>
+            <div class="file-name" id="fname-goat"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-upload" id="btn-goat" onclick="doUpload('goat')" disabled>
+                <span id="btn-goat-txt">⬆️ Upload</span>
+            </button>
+            <a href="/excel/template/goats/" class="btn-template">⬇️ Template</a>
+        </div>
+        <div class="import-result" id="result-goat"></div>
+    </div>
+
+    <!-- MILK -->
+    <div class="import-card" id="card-milk">
+        <div class="card-head">
+            <div class="card-emoji">🥛</div>
+            <div class="card-info">
+                <h3>Milk Production Import</h3>
+                <p>दूध production records bulk mein</p>
+            </div>
+        </div>
+        <div class="columns-badge">
+            <strong>Required Columns</strong>
+            goat_tag · date · session (M/E) · quantity<br>
+            fat_percentage <em style="color:var(--text-dim)">(optional)</em>
+        </div>
+        <div class="upload-zone" id="zone-milk">
+            <input type="file" id="file-milk" accept=".xlsx,.xls" onchange="onFileSelected('milk', this)">
+            <div class="upload-icon" id="icon-milk">📁</div>
+            <div class="upload-text">Click karein ya file drag karein</div>
+            <div class="upload-hint">.xlsx / .xls format</div>
+            <div class="file-name" id="fname-milk"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-upload" id="btn-milk" onclick="doUpload('milk')" disabled>
+                <span id="btn-milk-txt">⬆️ Upload</span>
+            </button>
+            <a href="/excel/template/milk/" class="btn-template">⬇️ Template</a>
+        </div>
+        <div class="import-result" id="result-milk"></div>
+    </div>
+
+    <!-- SALES -->
+    <div class="import-card" id="card-sales">
+        <div class="card-head">
+            <div class="card-emoji">💰</div>
+            <div class="card-info">
+                <h3>Sales Import</h3>
+                <p>बिक्रय records bulk mein add karein</p>
+            </div>
+        </div>
+        <div class="columns-badge">
+            <strong>Required Columns</strong>
+            sale_type · date · quantity · unit<br>
+            price_per_unit · total_amount · buyer_name · payment_status
+        </div>
+        <div class="upload-zone" id="zone-sales">
+            <input type="file" id="file-sales" accept=".xlsx,.xls" onchange="onFileSelected('sales', this)">
+            <div class="upload-icon" id="icon-sales">📁</div>
+            <div class="upload-text">Click karein ya file drag karein</div>
+            <div class="upload-hint">.xlsx / .xls format</div>
+            <div class="file-name" id="fname-sales"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-upload" id="btn-sales" onclick="doUpload('sales')" disabled>
+                <span id="btn-sales-txt">⬆️ Upload</span>
+            </button>
+            <a href="/excel/template/sales/" class="btn-template">⬇️ Template</a>
+        </div>
+        <div class="import-result" id="result-sales"></div>
+    </div>
+
+    <!-- HEALTH -->
+    <div class="import-card" id="card-health">
+        <div class="card-head">
+            <div class="card-emoji">🏥</div>
+            <div class="card-info">
+                <h3>Health Records Import</h3>
+                <p>स्वास्थ्य records bulk mein add karein</p>
+            </div>
+        </div>
+        <div class="columns-badge">
+            <strong>Required Columns</strong>
+            goat_tag · record_type · date · description<br>
+            medicine_used · dosage · cost · veterinarian · next_due_date
+        </div>
+        <div class="upload-zone" id="zone-health">
+            <input type="file" id="file-health" accept=".xlsx,.xls" onchange="onFileSelected('health', this)">
+            <div class="upload-icon" id="icon-health">📁</div>
+            <div class="upload-text">Click karein ya file drag karein</div>
+            <div class="upload-hint">.xlsx / .xls format</div>
+            <div class="file-name" id="fname-health"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-upload" id="btn-health" onclick="doUpload('health')" disabled>
+                <span id="btn-health-txt">⬆️ Upload</span>
+            </button>
+            <a href="/excel/template/health/" class="btn-template">⬇️ Template</a>
+        </div>
+        <div class="import-result" id="result-health"></div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="import-card" id="card-expenses">
+        <div class="card-head">
+            <div class="card-emoji">📋</div>
+            <div class="card-info">
+                <h3>Expenses Import</h3>
+                <p>खर्च records bulk mein add karein</p>
+            </div>
+        </div>
+        <div class="columns-badge">
+            <strong>Required Columns</strong>
+            date · expense_type · description · amount<br>
+            paid_to · payment_method (C/B/CH/O)
+        </div>
+        <div class="upload-zone" id="zone-expenses">
+            <input type="file" id="file-expenses" accept=".xlsx,.xls" onchange="onFileSelected('expenses', this)">
+            <div class="upload-icon" id="icon-expenses">📁</div>
+            <div class="upload-text">Click karein ya file drag karein</div>
+            <div class="upload-hint">.xlsx / .xls format</div>
+            <div class="file-name" id="fname-expenses"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-upload" id="btn-expenses" onclick="doUpload('expenses')" disabled>
+                <span id="btn-expenses-txt">⬆️ Upload</span>
+            </button>
+            <a href="/excel/template/expenses/" class="btn-template">⬇️ Template</a>
+        </div>
+        <div class="import-result" id="result-expenses"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+// URLs map
+const UPLOAD_URLS = {
+    goat:     '/excel/import/goats/',
+    milk:     '/excel/import/milk/',
+    sales:    '/excel/import/sales/',
+    health:   '/excel/import/health/',
+    expenses: '/excel/import/expenses/',
+};
+
+// Selected files store
+const FILES = {};
+
+// CSRF token (Django required)
+function getCsrf() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) return c.slice(name.length + 1);
+    }
+    return '';
+}
+
+function onFileSelected(type, input) {
+    const file = input.files[0];
+    if (!file) return;
+    FILES[type] = file;
+
+    // Zone update
+    const zone = document.getElementById('zone-' + type);
+    zone.classList.add('file-selected');
+    document.getElementById('icon-' + type).textContent = '✅';
+    document.getElementById('fname-' + type).textContent = file.name;
+
+    // Card highlight
+    document.getElementById('card-' + type).classList.add('has-file');
+
+    // Enable button
+    const btn = document.getElementById('btn-' + type);
+    btn.disabled = false;
+
+    // Clear old result
+    const result = document.getElementById('result-' + type);
+    result.className = 'import-result';
+    result.innerHTML = '';
+}
+
+// Drag & Drop
+document.querySelectorAll('.upload-zone').forEach(zone => {
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const type = zone.id.replace('zone-', '');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            // Simulate file input change
+            const input = document.getElementById('file-' + type);
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            onFileSelected(type, input);
+        }
+    });
+});
+
+async function doUpload(type) {
+    const file = FILES[type];
+    if (!file) return;
+
+    const btnTxt = document.getElementById('btn-' + type + '-txt');
+    const btn = document.getElementById('btn-' + type);
+    const result = document.getElementById('result-' + type);
+
+    // Loading state
+    btn.disabled = true;
+    btnTxt.innerHTML = '<span class="spinner-mini"></span> Importing...';
+    result.className = 'import-result';
+    result.innerHTML = '';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch(UPLOAD_URLS[type], {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrf() },
+            body: formData,
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            const hasErrors = data.data.failed > 0;
+            result.className = 'import-result show ' + (hasErrors ? 'partial' : 'success');
+
+            result.innerHTML = `
+                <div class="result-row">
+                    <span class="result-title">${hasErrors ? '⚠️' : '✅'} Import ${hasErrors ? 'Partial' : 'Success'}</span>
+                </div>
+                <div class="result-stats">
+                    <span class="stat-ok">✓ ${data.data.success} imported</span>
+                    ${hasErrors ? `<span class="stat-fail">✗ ${data.data.failed} failed</span>` : ''}
+                </div>
+                ${data.data.errors && data.data.errors.length > 0 ? `
+                    <div class="error-scroll">
+                        ${data.data.errors.map(e => `<div class="error-line">• ${e}</div>`).join('')}
+                    </div>` : ''}
+            `;
+        } else {
+            result.className = 'import-result show error';
+            result.innerHTML = `
+                <div class="result-title">❌ Error</div>
+                <div style="margin-top:6px;font-size:0.78rem;">${data.error || 'Upload failed. Please check file format.'}</div>
+            `;
+        }
+
+    } catch (err) {
+        result.className = 'import-result show error';
+        result.innerHTML = `
+            <div class="result-title">❌ Network Error</div>
+            <div style="margin-top:6px;font-size:0.78rem;">Server se connect nahi ho saka. Server chalu hai?</div>
+        `;
+    } finally {
+        btn.disabled = false;
+        btnTxt.textContent = '⬆️ Upload';
+    }
+}
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'farm/base.html' %}
+{% block title %}QR Codes — Goat Farm Pro{% endblock %}
+{% block page_title %}📸 QR Code Management{% endblock %}
+{% block page_sub %}Har goat ka QR code — scan karke seedha profile pe jaao{% endblock %}
+{% block page_breadcrumb %}QR Codes{% endblock %}
+{% block nav_qr %}active{% endblock %}
+
+{% block page_actions %}
+<a href="/api/goats/qr-batch-pdf/" class="btn btn-primary" target="_blank">📄 Download All QR (PDF)</a>
+{% endblock %}
+
+{% block extra_css %}
+.qr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; }
+.qr-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; text-align:center; transition:all .2s; }
+.qr-card:hover { border-color:var(--primary); transform:translateY(-2px); }
+.qr-img { width:120px; height:120px; border-radius:10px; border:2px solid var(--border); margin:0 auto .75rem; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:2rem; overflow:hidden; }
+.qr-img img { width:100%; height:100%; }
+.qr-tag { font-family:'JetBrains Mono',monospace; font-size:.75rem; color:var(--primary); font-weight:700; }
+.qr-name { font-size:.85rem; font-weight:700; color:var(--text); margin:.2rem 0; }
+.qr-breed { font-size:.7rem; color:var(--text-muted); }
+.search-wrap { display:flex; gap:.75rem; margin-bottom:1.25rem; }
+.form-control { padding:.6rem .9rem; background:var(--input-bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:.85rem; font-family:inherit; }
+.form-control:focus { outline:none; border-color:var(--primary); }
+{% endblock %}
+
+{% block content %}
+<div class="card" style="padding:1.25rem;margin-bottom:1.25rem;display:flex;gap:1rem;align-items:flex-start;">
+  <span style="font-size:1.5rem;">ℹ️</span>
+  <div>
+    <div style="font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:.3rem;">QR Code kaise use karein?</div>
+    <div style="font-size:.78rem;color:var(--text-muted);line-height:1.7;">
+      1. Neeche se kisi goat ka QR code download karein<br>
+      2. Print karke ear tag banao (laminate karo for durability)<br>
+      3. Mobile camera se scan karo → seedha us goat ki profile khul jaayegi<br>
+      4. "Download All PDF" se ek baar mein sab goats ke QR print kar sakte ho
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+  <input type="text" id="searchQr" placeholder="Tag number ya naam search karein..." class="form-control" style="flex:1;min-width:200px;" oninput="filterGoats()">
+  <select id="filterStatus" class="form-control" style="width:130px;" onchange="filterGoats()">
+    <option value="">All Status</option>
+    <option value="A">Active</option>
+    <option value="P">Pregnant</option>
+  </select>
+</div>
+
+<div id="qrGrid" class="qr-grid">
+  <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-dim);">
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div style="margin-top:.75rem;font-size:.8rem;">Loading goats...</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+const BREED_MAP = {boer:'Boer',saanen:'Saanen',alpine:'Alpine',nubian:'Nubian',sirohi:'Sirohi',barbari:'Barbari',jamunapari:'Jamunapari',beetal:'Beetal',marwari:'Marwari',local:'Local/Desi'};
+let allGoats = [];
+
+async function loadGoats() {
+  try {
+    const data = await fetch(`${API}/goats/?page_size=500`).then(r=>r.json());
+    allGoats = Array.isArray(data) ? data : (data.items || []);
+    renderGrid(allGoats);
+  } catch(e) { 
+    document.getElementById('qrGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-dim);">Error loading goats</div>';
+  }
+}
+
+function renderGrid(goats) {
+  const grid = document.getElementById('qrGrid');
+  if (!goats.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-dim);">Koi goat nahi mili</div>';
+    return;
+  }
+  grid.innerHTML = goats.map(g => `
+    <div class="qr-card">
+      <div class="qr-img" id="qr-img-${g.id}">
+        <span style="color:var(--text-dim);">🔄</span>
+      </div>
+      <div class="qr-tag">${g.tag_number}</div>
+      <div class="qr-name">${g.gender==='M'?'♂':'♀'} ${g.name}</div>
+      <div class="qr-breed">${BREED_MAP[g.breed]||g.breed}</div>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;">
+        <a href="${API}/goats/${g.id}/qr-code/" target="_blank" download="qr_${g.tag_number}.png"
+           class="btn btn-outline btn-sm" style="flex:1;justify-content:center;">⬇️ Download</a>
+        <a href="/goat/scan/${g.tag_number}/" target="_blank"
+           class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">👁️ View</a>
+      </div>
+    </div>`).join('');
+
+  // Lazy load QR images
+  goats.forEach(g => {
+    const el = document.getElementById(`qr-img-${g.id}`);
+    const img = new Image();
+    img.src = `${API}/goats/${g.id}/qr-code/`;
+    img.onload = () => { el.innerHTML = ''; el.appendChild(img); };
+    img.onerror = () => { el.innerHTML = `<div style="font-size:.65rem;color:var(--text-dim);padding:.5rem;">QR generate karne ke liye<br>qrcode library install karein</div>`; };
+  });
+}
+
+function filterGoats() {
+  const q = document.getElementById('searchQr').value.toLowerCase();
+  const s = document.getElementById('filterStatus').value;
+  renderGrid(allGoats.filter(g =>
+    (!q || g.tag_number.toLowerCase().includes(q) || g.name.toLowerCase().includes(q)) &&
+    (!s || g.status === s)
+  ));
+}
+
+window.addEventListener('DOMContentLoaded', loadGoats);
+{% endblock %}

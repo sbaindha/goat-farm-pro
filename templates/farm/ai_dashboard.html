@@ -1,0 +1,181 @@
+{% extends 'farm/base.html' %}
+{% block title %}AI Insights — Goat Farm Pro{% endblock %}
+{% block page_title %}🤖 AI Insights{% endblock %}
+{% block page_sub %}<span class="hi-only">Smart suggestions — Breeding, Selling, Health Alerts</span><span class="en-only">Smart suggestions — Breeding, Selling, Health Alerts</span>{% endblock %}
+{% block page_breadcrumb %}AI Insights{% endblock %}
+{% block nav_ai %}active{% endblock %}
+
+{% block extra_css %}
+.ai-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem; }
+.ai-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.ai-card-header { padding:.9rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.ai-card-title { font-size:.88rem; font-weight:700; color:var(--text); }
+.ai-item { padding:.85rem 1.25rem; border-bottom:1px solid var(--border); }
+.ai-item:last-child { border-bottom:none; }
+.pair-score { font-family:'JetBrains Mono',monospace; font-size:1.4rem; font-weight:800; }
+.reason-tag { display:inline-block; background:var(--primary-glow); color:var(--primary); font-size:.65rem; padding:2px 8px; border-radius:20px; margin:2px; }
+.risk-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.68rem; font-weight:700; }
+.risk-1 { background:rgba(245,158,11,.15); color:#f59e0b; }
+.risk-2 { background:rgba(239,68,68,.15); color:#ef4444; }
+.risk-3 { background:rgba(239,68,68,.25); color:#ef4444; border:1px solid rgba(239,68,68,.4); }
+.sell-score-bar { height:6px; border-radius:10px; background:linear-gradient(90deg,var(--amber),var(--primary)); margin-top:6px; transition:width .8s; }
+.feed-row { display:flex; justify-content:space-between; align-items:center; padding:.7rem 1.25rem; border-bottom:1px solid var(--border); }
+.feed-row:last-child { border-bottom:none; }
+@media(max-width:900px){.ai-grid{grid-template-columns:1fr;}}
+{% endblock %}
+
+{% block content %}
+<div class="ai-grid">
+  <!-- BREEDING SUGGESTIONS -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-title">🐐 Best Breeding Pairs</div>
+      <span style="font-size:.68rem;color:var(--text-dim);">Score-based AI matching</span>
+    </div>
+    <div id="breedingSug"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+
+  <!-- SICK DETECTION -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-title">🏥 Health Risk Alerts</div>
+      <span id="sickCount" style="background:var(--danger-glow);color:var(--danger);font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;">—</span>
+    </div>
+    <div id="sickList"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+</div>
+
+<div class="ai-grid">
+  <!-- SELL SUGGESTIONS -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-title">💰 Optimal Sell Time</div>
+      <span style="font-size:.68rem;color:var(--text-dim);">Age + Market price + Weight</span>
+    </div>
+    <div id="sellList"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+
+  <!-- FEED OPTIMIZATION -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-title">🌾 Feed Optimization</div>
+      <span style="font-size:.68rem;color:var(--text-dim);">Daily requirement per category</span>
+    </div>
+    <div id="feedOpt"><div style="text-align:center;padding:2rem;color:var(--text-dim);">Loading...</div></div>
+  </div>
+</div>
+
+<!-- AI INFO CARD -->
+<div class="ai-card" style="padding:1.25rem;display:flex;align-items:flex-start;gap:1rem;">
+  <span style="font-size:2rem;">🤖</span>
+  <div>
+    <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.4rem;">AI Engine — How it works?</div>
+    <div style="font-size:.78rem;color:var(--text-muted);line-height:1.6;">
+      Yeh AI aapke farm ke actual data se kaam karta hai — koi external API nahi.<br>
+      • <b>Breeding Score</b> = (Weight 30%) + (Health 40%) + (Age 20%) + (Past Breeding 10%)<br>
+      • <b>Sick Detection</b> = Weight loss &gt;10% in 2 weeks, 2+ treatments in 30 days, milk drop &gt;30%<br>
+      • <b>Sell Suggestion</b> = Age 6-18 months + Weight &gt;25kg + Market price above average<br>
+      • <b>Feed Optimization</b> = 3.5% body weight (females), 2.5% (males), 4.2% (pregnant)
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+function fmt(n){ return '₹'+Math.round(n).toLocaleString('en-IN'); }
+
+async function loadAll() {
+  const [breed, sick, sell, feed] = await Promise.all([
+    fetch(`${API}/ai/breeding-suggestions/?limit=4`).then(r=>r.json()).catch(()=>[]),
+    fetch(`${API}/ai/sick-detection/`).then(r=>r.json()).catch(()=>[]),
+    fetch(`${API}/ai/sell-suggestions/`).then(r=>r.json()).catch(()=>[]),
+    fetch(`${API}/ai/feed-optimization/`).then(r=>r.json()).catch(()=>[]),
+  ]);
+
+  // BREEDING
+  const bel = document.getElementById('breedingSug');
+  if (breed.length) {
+    bel.innerHTML = breed.map(p=>`
+      <div class="ai-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+          <div>
+            <div style="font-size:.82rem;font-weight:700;color:var(--text);">♀ ${p.mother_name}</div>
+            <div style="font-size:.78rem;color:var(--text-muted);">× ♂ ${p.father_name}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="pair-score" style="color:${p.combined_score>=70?'#4ade80':p.combined_score>=50?'#f59e0b':'#ef4444'};">${p.combined_score}</div>
+            <div style="font-size:.65rem;color:var(--text-dim);">/ 100</div>
+          </div>
+        </div>
+        <div>${(p.reasons||[]).map(r=>`<span class="reason-tag">${r}</span>`).join('')}</div>
+      </div>`).join('');
+  } else {
+    bel.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">Koi suggestion nahi — breeding records add karein</div>';
+  }
+
+  // SICK DETECTION
+  document.getElementById('sickCount').textContent = sick.length + ' at risk';
+  const sel = document.getElementById('sickList');
+  if (sick.length) {
+    sel.innerHTML = sick.map(g=>`
+      <div class="ai-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
+          <div style="font-size:.82rem;font-weight:700;color:var(--text);">${g.name} <span style="font-size:.7rem;color:var(--text-dim);">${g.tag_number}</span></div>
+          <span class="risk-badge risk-${g.risk_level}">${g.risk_label}</span>
+        </div>
+        <div>${(g.risk_factors||[]).map(f=>`<div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">${f}</div>`).join('')}</div>
+        ${g.last_checkup?`<div style="font-size:.68rem;color:var(--text-dim);margin-top:.4rem;">Last checkup: ${g.last_checkup}</div>`:''}
+      </div>`).join('');
+  } else {
+    sel.innerHTML = '<div style="padding:1.5rem;text-align:center;color:#4ade80;">✅ Sab goats healthy lag rahi hain</div>';
+  }
+
+  // SELL SUGGESTIONS
+  const slel = document.getElementById('sellList');
+  if (sell.length) {
+    slel.innerHTML = sell.slice(0,5).map(g=>`
+      <div class="ai-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:.82rem;font-weight:700;color:var(--text);">${g.name} <span style="font-size:.7rem;color:var(--text-dim);">${g.tag_number}</span></div>
+            <div style="font-size:.7rem;color:var(--text-muted);">${g.age_months} months · ${g.weight_kg}kg</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:800;color:var(--primary);">${fmt(g.estimated_value)}</div>
+            <div style="font-size:.65rem;color:var(--text-dim);">est. value</div>
+          </div>
+        </div>
+        <div class="sell-score-bar" style="width:${g.score}%"></div>
+        <div style="font-size:.65rem;color:var(--text-dim);margin-top:.35rem;">${(g.reasons||[]).join(' · ')}</div>
+      </div>`).join('');
+  } else {
+    slel.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">Abhi koi goat sell karne ke liye ready nahi</div>';
+  }
+
+  // FEED OPTIMIZATION
+  const fel = document.getElementById('feedOpt');
+  if (feed.length) {
+    const total = feed.reduce((s,f)=>s+f.total_daily_feed_kg, 0);
+    fel.innerHTML = feed.map(f=>`
+      <div class="feed-row">
+        <div>
+          <div style="font-size:.82rem;font-weight:700;color:var(--text);">${f.category}</div>
+          <div style="font-size:.7rem;color:var(--text-muted);">${f.count} goats · Avg ${f.avg_weight_kg}kg</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:700;color:var(--primary);">${f.total_daily_feed_kg}kg/day</div>
+          <div style="font-size:.65rem;color:var(--text-dim);">${f.monthly_feed_kg}kg/month</div>
+        </div>
+      </div>`).join('')
+      + `<div class="feed-row" style="background:var(--primary-glow);">
+          <div style="font-size:.82rem;font-weight:800;color:var(--text);">Total Daily Requirement</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:800;color:var(--primary);">${total.toFixed(1)}kg/day</div>
+        </div>`;
+  } else {
+    fel.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);">Goat data add karein</div>';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', loadAll);
+{% endblock %}

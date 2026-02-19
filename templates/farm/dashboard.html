@@ -1,0 +1,146 @@
+{% extends 'farm/base.html' %}
+{% block title %}Dashboard — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>📊 डैशबोर्ड</span><span class='en-only'>📊 Dashboard</span>{% endblock %}
+{% block page_sub %}<span class='hi-only'>आपके फार्म का पूरा अवलोकन</span><span class='en-only'>Complete farm overview</span>{% endblock %}
+{% block page_breadcrumb %}dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_css %}
+.dash-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.card-title{font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.empty-msg{text-align:center;padding:28px;color:var(--text-dim);font-size:0.82rem}
+.milk-hero{text-align:center;padding:28px}
+.milk-val{font-size:3rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--primary);line-height:1}
+.milk-sub{font-size:0.78rem;color:var(--text-muted);margin-top:6px}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.quick-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center}
+.quick-val{font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text);line-height:1}
+.quick-lbl{font-size:0.68rem;color:var(--text-muted);margin-top:4px;font-weight:600}
+@media(max-width:768px){.dash-grid{grid-template-columns:1fr}.quick-grid{grid-template-columns:1fr 1fr}}
+{% endblock %}
+
+{% block page_actions %}
+<div style="display:flex;gap:8px;">
+    <a href="/goats/" class="btn btn-primary">+ <span class='hi-only'>बकरी जोड़ें</span><span class='en-only'>Add Goat</span></a>
+    <a href="/weather/" class="btn btn-outline">🌦️ <span class='hi-only'>मौसम</span><span class='en-only'>Weather</span></a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="dash-stats">
+    <div class="stat-card green"><div class="stat-icon-wrap">🐐</div><div class="stat-value">{{ total_goats }}</div><div class="stat-label"><span class='hi-only'>कुल बकरियां</span><span class='en-only'>Total Goats</span></div></div>
+    <div class="stat-card green"><div class="stat-icon-wrap">✅</div><div class="stat-value">{{ active_goats }}</div><div class="stat-label"><span class='hi-only'>सक्रिय</span><span class='en-only'>Active</span></div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">🤰</div><div class="stat-value">{{ pregnant_goats }}</div><div class="stat-label"><span class='hi-only'>गर्भवती</span><span class='en-only'>Pregnant</span></div></div>
+    <div class="stat-card green"><div class="stat-icon-wrap">💰</div><div class="stat-value">₹{{ total_sales_amount|floatformat:0 }}</div><div class="stat-label"><span class='hi-only'>कुल बिक्रय</span><span class='en-only'>Total Sales</span></div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">📉</div><div class="stat-value">₹{{ total_expenses_amount|floatformat:0 }}</div><div class="stat-label"><span class='hi-only'>कुल खर्च</span><span class='en-only'>Expenses</span></div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">📈</div><div class="stat-value">₹{{ profit|floatformat:0 }}</div><div class="stat-label"><span class='hi-only'>शुद्ध लाभ</span><span class='en-only'>Net Profit</span></div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
+    <div class="card">
+        <div class="card-title">⚡ <span class='hi-only'>त्वरित स्थिति</span><span class='en-only'>Quick Status</span></div>
+        <div class="quick-grid" style="grid-template-columns:repeat(3,1fr);">
+            <div class="quick-item"><div class="quick-val" style="color:var(--amber);">{{ pending_tasks }}</div><div class="quick-lbl"><span class='hi-only'>अधूरे कार्य</span><span class='en-only'>Pending Tasks</span></div></div>
+            <div class="quick-item"><div class="quick-val" style="color:var(--danger);">{{ overdue_vaccinations }}</div><div class="quick-lbl"><span class='hi-only'>बकाया टीकाकरण</span><span class='en-only'>Overdue Vacc.</span></div></div>
+            <div class="quick-item"><div class="quick-val" style="color:var(--primary);">{{ pending_reminders }}</div><div class="quick-lbl"><span class='hi-only'>रिमाइंडर</span><span class='en-only'>Reminders</span></div></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">🥛 <span class='hi-only'>आज का दूध</span><span class='en-only'>Today's Milk</span></div>
+        <div class="milk-hero">
+            <div class="milk-val">{{ total_milk_today|floatformat:2 }}<span style="font-size:1.5rem;"> L</span></div>
+            <div class="milk-sub"><span class='hi-only'>आज उत्पादित</span><span class='en-only'>Produced today</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="card">
+        <div class="card-title">🐐 <span class='hi-only'>हाल की बकरियां</span><span class='en-only'>Recent Goats</span></div>
+        {% if recent_goats %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th><span class='hi-only'>टैग</span><span class='en-only'>Tag</span></th><th><span class='hi-only'>नाम</span><span class='en-only'>Name</span></th><th><span class='hi-only'>नस्ल</span><span class='en-only'>Breed</span></th><th><span class='hi-only'>स्थिति</span><span class='en-only'>Status</span></th></tr></thead>
+                <tbody>
+                    {% for goat in recent_goats %}
+                    <tr>
+                        <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim);">{{ goat.tag_number }}</span></td>
+                        <td style="font-weight:600;">{{ goat.name }}</td>
+                        <td>{{ goat.breed }}</td>
+                        <td>{% if goat.status == 'A' %}<span class="badge badge-green">✅ Active</span>{% elif goat.status == 'P' %}<span class="badge badge-pink">🤰 Pregnant</span>{% elif goat.status == 'S' %}<span class="badge badge-amber">💰 Sold</span>{% else %}<span class="badge badge-red">💀 Dead</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<div class="empty-msg">🐐 <span class='hi-only'>कोई बकरी नहीं मिली</span><span class='en-only'>No goats found</span></div>{% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title">💰 <span class='hi-only'>हाल की बिक्रियां</span><span class='en-only'>Recent Sales</span></div>
+        {% if recent_sales %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th><span class='hi-only'>तारीख</span><span class='en-only'>Date</span></th><th><span class='hi-only'>प्रकार</span><span class='en-only'>Type</span></th><th><span class='hi-only'>राशि</span><span class='en-only'>Amount</span></th><th><span class='hi-only'>खरीदार</span><span class='en-only'>Buyer</span></th></tr></thead>
+                <tbody>
+                    {% for sale in recent_sales %}
+                    <tr>
+                        <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;">{{ sale.date|date:"d M Y" }}</td>
+                        <td>{{ sale.get_sale_type_display }}</td>
+                        <td style="font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--primary);">₹{{ sale.total_amount|floatformat:0 }}</td>
+                        <td>{{ sale.buyer_name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<div class="empty-msg">💰 <span class='hi-only'>कोई बिक्रय नहीं</span><span class='en-only'>No sales yet</span></div>{% endif %}
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="card">
+        <div class="card-title">🏥 <span class='hi-only'>स्वास्थ्य रिकॉर्ड</span><span class='en-only'>Health Records</span></div>
+        {% if recent_health %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th><span class='hi-only'>बकरी</span><span class='en-only'>Goat</span></th><th><span class='hi-only'>प्रकार</span><span class='en-only'>Type</span></th><th><span class='hi-only'>तारीख</span><span class='en-only'>Date</span></th><th><span class='hi-only'>खर्च</span><span class='en-only'>Cost</span></th></tr></thead>
+                <tbody>
+                    {% for health in recent_health %}
+                    <tr>
+                        <td style="font-weight:600;">{{ health.goat.name }}</td>
+                        <td>{{ health.get_record_type_display }}</td>
+                        <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;">{{ health.date|date:"d M Y" }}</td>
+                        <td style="font-family:'JetBrains Mono',monospace;">₹{{ health.cost|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<div class="empty-msg">🏥 <span class='hi-only'>कोई रिकॉर्ड नहीं</span><span class='en-only'>No health records</span></div>{% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title">🤰 <span class='hi-only'>आने वाली डिलीवरी</span><span class='en-only'>Upcoming Deliveries</span></div>
+        {% if upcoming_deliveries %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th><span class='hi-only'>माँ</span><span class='en-only'>Mother</span></th><th><span class='hi-only'>अपेक्षित</span><span class='en-only'>Expected</span></th><th><span class='hi-only'>स्थिति</span><span class='en-only'>Status</span></th></tr></thead>
+                <tbody>
+                    {% for breeding in upcoming_deliveries %}
+                    <tr>
+                        <td style="font-weight:600;">{{ breeding.mother.name }}</td>
+                        <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;">{{ breeding.expected_delivery_date|date:"d M Y" }}</td>
+                        <td>{% if breeding.status == 'P' %}<span class="badge badge-blue">⏳ Pending</span>{% elif breeding.status == 'C' %}<span class="badge badge-green">✅ Confirmed</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<div class="empty-msg">🤰 <span class='hi-only'>कोई डिलीवरी नहीं</span><span class='en-only'>No upcoming deliveries</span></div>{% endif %}
+    </div>
+</div>
+
+{% endblock %}

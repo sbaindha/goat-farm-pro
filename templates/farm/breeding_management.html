@@ -1,0 +1,192 @@
+{% extends 'farm/base.html' %}
+{% block title %}Breeding Records — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>🤰 प्रजनन रिकॉर्ड</span><span class='en-only'>🤰 Breeding Records</span>{% endblock %}
+{% block page_breadcrumb %}<span class='hi-only'>प्रजनन</span><span class='en-only'>breeding</span>{% endblock %}
+{% block nav_breeding %}active{% endblock %}
+
+{% block page_sub %}<span class='hi-only'>संभोग और डिलीवरी ट्रैक करें</span><span class='en-only'>Track matings & deliveries</span>{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="openModal()">+ <span class='hi-only'>रिकॉर्ड जोड़ें</span><span class='en-only'>Add Record</span></button>
+{% endblock %}
+
+{% block extra_css %}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:22px;">
+    <div class="stat-card green"><div class="stat-icon-wrap">📋</div><div class="stat-value" id="sc-total">—</div><div class="stat-label">Total Records</div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">⏳</div><div class="stat-value" id="sc-pending">—</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">✅</div><div class="stat-value" id="sc-confirmed">—</div><div class="stat-label">Confirmed</div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">🍼</div><div class="stat-value" id="sc-delivered">—</div><div class="stat-label">Delivered</div></div>
+</div>
+
+<div class="filter-row">
+    <span style="font-size:.72rem;color:var(--text-muted);font-weight:600;"><span class='hi-only'>फ़िल्टर:</span><span class='en-only'>Filter:</span></span>
+    <span class="filter-chip active" onclick="setFilter('all',this)">📋 <span class='hi-only'>सभी</span><span class='en-only'>All</span></span>
+    <span class="filter-chip" onclick="setFilter('P',this)">⏳ <span class='hi-only'>लंबित</span><span class='en-only'>Pending</span></span>
+    <span class="filter-chip" onclick="setFilter('C',this)">✅ <span class='hi-only'>पुष्टि</span><span class='en-only'>Confirmed</span></span>
+    <span class="filter-chip" onclick="setFilter('D',this)">🍼 <span class='hi-only'>डिलीवर</span><span class='en-only'>Delivered</span></span>
+    <span class="filter-chip" onclick="setFilter('F',this)">❌ <span class='hi-only'>विफल</span><span class='en-only'>Failed</span></span>
+</div>
+
+<div class="card" style="padding:0;">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mother</th><th>Father</th><th>Breeding Date</th>
+                    <th>Expected Delivery</th><th>Kids</th><th>Status</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="recordsBody">
+                <tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text-dim);">
+                    <div class="loading-dots" style="display:inline-flex;gap:6px;"><span></span><span></span><span></span></div>
+                </td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="breedModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">➕ Add Breeding Record</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <form onsubmit="submitRecord(event)">
+            <input type="hidden" id="recId">
+            <div class="form-grid">
+                <div class="form-group"><label class="form-label">Mother (Goat ID) *</label><input class="form-input" id="f-mother" type="number" placeholder="Mother ID" required></div>
+                <div class="form-group"><label class="form-label">Father (Goat ID) *</label><input class="form-input" id="f-father" type="number" placeholder="Father ID" required></div>
+                <div class="form-group"><label class="form-label">Breeding Date *</label><input class="form-input" type="date" id="f-bdate" required></div>
+                <div class="form-group"><label class="form-label">Expected Delivery</label><input class="form-input" type="date" id="f-edate"></div>
+                <div class="form-group"><label class="form-label">Actual Delivery</label><input class="form-input" type="date" id="f-adate"></div>
+                <div class="form-group"><label class="form-label">Number of Kids</label><input class="form-input" type="number" id="f-kids" min="0"></div>
+                <div class="form-group"><label class="form-label">Status</label>
+                    <select class="form-select" id="f-status">
+                        <option value="P">Pending</option><option value="C">Confirmed</option>
+                        <option value="D">Delivered</option><option value="F">Failed</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+let allRecords = [], currentFilter = 'all';
+const SL = {P:'Pending',C:'Confirmed',D:'Delivered',F:'Failed'};
+const SB = {P:'badge-blue',C:'badge-green',D:'badge-amber',F:'badge-red'};
+
+function loadRecords() {
+    fetch(API + '/breeding/')
+        .then(r => r.json())
+        .then(data => {
+            allRecords = data;
+            document.getElementById('sc-total').textContent     = data.length;
+            document.getElementById('sc-pending').textContent   = data.filter(r => r.status === 'P').length;
+            document.getElementById('sc-confirmed').textContent = data.filter(r => r.status === 'C').length;
+            document.getElementById('sc-delivered').textContent = data.filter(r => r.status === 'D').length;
+            renderTable(data);
+        })
+        .catch(() => {
+            document.getElementById('recordsBody').innerHTML = '<tr><td colspan="7" style="color:var(--danger);padding:20px;text-align:center;">Error loading data</td></tr>';
+        });
+}
+
+function renderTable(records) {
+    const tbody = document.getElementById('recordsBody');
+    if (!records.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-dim);">No records found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = records.map(r => `
+        <tr>
+            <td>🐐 #${r.mother_id}</td>
+            <td>🐐 #${r.father_id}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">${r.breeding_date}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">${r.expected_delivery_date || '—'}</td>
+            <td style="text-align:center;">${r.number_of_kids ?? '—'}</td>
+            <td><span class="badge ${SB[r.status] || 'badge-gray'}">${SL[r.status] || r.status}</span></td>
+            <td>
+                <button class="btn btn-outline btn-sm" onclick='editRec(${JSON.stringify(r)})'>✏️</button>
+            </td>
+        </tr>`).join('');
+}
+
+function setFilter(val, el) {
+    currentFilter = val;
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderTable(val === 'all' ? allRecords : allRecords.filter(r => r.status === val));
+}
+
+function openModal() {
+    document.getElementById('modalTitle').textContent = '➕ Add Breeding Record';
+    document.getElementById('recId').value = '';
+    document.getElementById('breedModal').classList.add('open');
+}
+
+function editRec(r) {
+    document.getElementById('modalTitle').textContent = '✏️ Edit Breeding Record';
+    document.getElementById('recId').value  = r.id;
+    document.getElementById('f-mother').value = r.mother_id;
+    document.getElementById('f-father').value = r.father_id;
+    document.getElementById('f-bdate').value  = r.breeding_date;
+    document.getElementById('f-edate').value  = r.expected_delivery_date || '';
+    document.getElementById('f-adate').value  = r.actual_delivery_date || '';
+    document.getElementById('f-kids').value   = r.number_of_kids || '';
+    document.getElementById('f-status').value = r.status;
+    document.getElementById('breedModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('breedModal').classList.remove('open'); }
+document.getElementById('breedModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+async function submitRecord(e) {
+    e.preventDefault();
+    const id  = document.getElementById('recId').value;
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Saving...'; btn.disabled = true;
+    const bDate = document.getElementById('f-bdate').value;
+    const expDate = document.getElementById('f-edate').value || (() => {
+        const d = new Date(bDate); d.setDate(d.getDate() + 150); return d.toISOString().split('T')[0];
+    })();
+    const payload = {
+        mother_id: parseInt(document.getElementById('f-mother').value),
+        father_id: parseInt(document.getElementById('f-father').value),
+        breeding_date: bDate,
+        expected_delivery_date: expDate,
+        actual_delivery_date: document.getElementById('f-adate').value || null,
+        number_of_kids: parseInt(document.getElementById('f-kids').value) || null,
+        status: document.getElementById('f-status').value,
+    };
+    try {
+        const res = await fetch(id ? `${API}/breeding/${id}/` : `${API}/breeding/`, {
+            method: id ? 'PUT' : 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('✅ Record saved!');
+        closeModal();
+        loadRecords();
+    } catch (err) {
+        showToast('❌ ' + err.message, 'error');
+    } finally {
+        btn.textContent = 'Save'; btn.disabled = false;
+    }
+}
+
+window.addEventListener('DOMContentLoaded', loadRecords);
+{% endblock %}

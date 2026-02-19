@@ -1,0 +1,761 @@
+{% extends 'farm/base.html' %}
+{% block title %}API Help & Try — Goat Farm{% endblock %}
+{% block page_title %}API Help & Try{% endblock %}
+{% block page_breadcrumb %}goat-farm / api-help{% endblock %}
+{% block nav_api_help %}active{% endblock %}
+
+{% block extra_css %}
+.help-wrap { display: grid; grid-template-columns: 280px 1fr; gap: 0; height: calc(100vh - 60px); margin: -28px; }
+
+/* ── LEFT: Endpoint list ── */
+.ep-list {
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  overflow-y: auto;
+  padding: 16px 0;
+}
+.ep-search {
+  margin: 0 12px 12px;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  width: calc(100% - 24px);
+  outline: none;
+}
+.ep-search:focus { border-color: var(--primary); }
+.ep-section { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); padding: 10px 16px 4px; }
+.ep-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; cursor: pointer;
+  font-size: 13px; color: var(--text-muted);
+  transition: all .15s; border-left: 2px solid transparent;
+}
+.ep-item:hover { background: var(--bg3); color: var(--text); }
+.ep-item.active { background: var(--bg3); color: var(--primary); border-left-color: var(--primary); }
+.method-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  padding: 2px 5px; border-radius: 3px;
+  min-width: 38px; text-align: center;
+  flex-shrink: 0;
+}
+.GET    { background: rgba(59,130,246,.18);  color: #60a5fa; }
+.POST   { background: rgba(34,197,94,.18);   color: #4ade80; }
+.PUT    { background: rgba(245,158,11,.18);  color: #fbbf24; }
+.DELETE { background: rgba(239,68,68,.18);   color: #f87171; }
+.ep-path { font-family: 'JetBrains Mono', monospace; font-size: 11px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── RIGHT: Detail panel ── */
+.ep-detail { overflow-y: auto; padding: 28px; }
+.ep-hero { margin-bottom: 24px; }
+.ep-hero-method { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+.ep-hero-path { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); word-break: break-all; }
+.ep-desc { font-size: 14px; color: var(--text-muted); margin-top: 8px; line-height: 1.7; }
+
+.auth-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  padding: 4px 10px; border-radius: 20px; margin-top: 10px;
+}
+.chip-lock   { background: rgba(239,68,68,.12);  color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+.chip-public { background: rgba(34,197,94,.10);  color: #4ade80; border: 1px solid rgba(34,197,94,.25); }
+
+/* Params table */
+.param-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 20px; }
+.param-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); padding: 8px 12px; background: var(--bg3); border-bottom: 1px solid var(--border); text-align: left; }
+.param-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.param-table td:first-child { font-family: 'JetBrains Mono', monospace; color: #fbbf24; font-size: 12px; }
+.param-table td:nth-child(2) { color: #60a5fa; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.param-table td:last-child { color: var(--text-muted); font-size: 12px; }
+.req-badge { font-size: 9px; font-weight: 700; color: #f87171; background: rgba(239,68,68,.12); padding: 1px 5px; border-radius: 3px; }
+.opt-badge { font-size: 9px; color: var(--text-dim); }
+
+/* Section label */
+.s-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin: 20px 0 8px; }
+
+/* Try panel */
+.try-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 8px; }
+.try-head { padding: 14px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.try-head h3 { font-size: 13px; font-weight: 700; color: var(--text); margin: 0; }
+.try-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.try-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: center; }
+.try-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+.try-input, .try-textarea, .try-select {
+  padding: 8px 12px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; outline: none; width: 100%;
+  transition: border-color .15s;
+}
+.try-input:focus, .try-textarea:focus, .try-select:focus { border-color: var(--primary); }
+.try-textarea { resize: vertical; min-height: 120px; }
+
+.try-btn {
+  align-self: flex-start;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 22px; background: var(--primary); color: #000;
+  font-size: 13px; font-weight: 700; border: none;
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-family: inherit; transition: all .15s;
+}
+.try-btn:hover { background: #4ade80; transform: translateY(-1px); }
+.try-btn:disabled { background: var(--bg3); color: var(--text-dim); cursor: not-allowed; transform: none; }
+
+/* Response area */
+.response-area {
+  background: #050d07; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  line-height: 1.7; color: #a3e0a8; min-height: 80px;
+  max-height: 400px; overflow-y: auto; white-space: pre-wrap;
+  word-break: break-all;
+}
+.status-line { font-size: 11px; margin-bottom: 6px; font-weight: 600; }
+.status-ok  { color: #4ade80; }
+.status-err { color: #f87171; }
+
+/* Code example */
+.code-ex { background: #050d07; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; color: #a3e0a8; overflow-x: auto; position: relative; }
+.copy-code { position: absolute; top: 8px; right: 8px; background: rgba(34,197,94,.15); border: 1px solid var(--border); color: var(--primary); font-size: 10px; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: inherit; transition: all .15s; }
+.copy-code:hover { background: rgba(34,197,94,.25); }
+
+.k { color: #4ade80; } .s { color: #fbbf24; } .n { color: #60a5fa; } .c { color: #4a6b4d; } .p { color: #e879f9; }
+
+@media (max-width: 900px) { .help-wrap { grid-template-columns: 1fr; } .ep-list { max-height: 220px; } }
+{% endblock %}
+
+{% block content %}
+<div class="help-wrap">
+
+  <!-- ══ LEFT: Endpoint list ══ -->
+  <div class="ep-list">
+    <input class="ep-search" id="epSearch" placeholder="🔍 endpoint dhundho..." oninput="filterEndpoints(this.value)">
+
+    <div id="epListInner">
+      <div class="ep-section">Auth</div>
+      <div class="ep-item active" onclick="showEp('root')" data-ep="root"><span class="method-tag GET">GET</span><span class="ep-path">/api/</span></div>
+      <div class="ep-item" onclick="showEp('login')" data-ep="login"><span class="method-tag POST">POST</span><span class="ep-path">/api/auth/login/</span></div>
+      <div class="ep-item" onclick="showEp('logout')" data-ep="logout"><span class="method-tag POST">POST</span><span class="ep-path">/api/auth/logout/</span></div>
+      <div class="ep-item" onclick="showEp('me')" data-ep="me"><span class="method-tag GET">GET</span><span class="ep-path">/api/auth/me/</span></div>
+
+      <div class="ep-section">Goats</div>
+      <div class="ep-item" onclick="showEp('goats_list')" data-ep="goats_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/goats/</span></div>
+      <div class="ep-item" onclick="showEp('goats_create')" data-ep="goats_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/goats/</span></div>
+      <div class="ep-item" onclick="showEp('goats_detail')" data-ep="goats_detail"><span class="method-tag GET">GET</span><span class="ep-path">/api/goats/{id}/</span></div>
+      <div class="ep-item" onclick="showEp('goats_update')" data-ep="goats_update"><span class="method-tag PUT">PUT</span><span class="ep-path">/api/goats/{id}/</span></div>
+      <div class="ep-item" onclick="showEp('goats_delete')" data-ep="goats_delete"><span class="method-tag DELETE">DELETE</span><span class="ep-path">/api/goats/{id}/</span></div>
+      <div class="ep-item" onclick="showEp('goats_stats')" data-ep="goats_stats"><span class="method-tag GET">GET</span><span class="ep-path">/api/goats/{id}/stats/</span></div>
+
+      <div class="ep-section">Health / Milk / Weight</div>
+      <div class="ep-item" onclick="showEp('health_list')" data-ep="health_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/health/</span></div>
+      <div class="ep-item" onclick="showEp('health_create')" data-ep="health_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/health/</span></div>
+      <div class="ep-item" onclick="showEp('milk_list')" data-ep="milk_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/milk/</span></div>
+      <div class="ep-item" onclick="showEp('milk_create')" data-ep="milk_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/milk/</span></div>
+      <div class="ep-item" onclick="showEp('weight_list')" data-ep="weight_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/weight/</span></div>
+      <div class="ep-item" onclick="showEp('weight_create')" data-ep="weight_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/weight/</span></div>
+
+      <div class="ep-section">Sales / Expenses</div>
+      <div class="ep-item" onclick="showEp('sales_list')" data-ep="sales_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/sales/</span></div>
+      <div class="ep-item" onclick="showEp('sales_create')" data-ep="sales_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/sales/</span></div>
+      <div class="ep-item" onclick="showEp('expenses_list')" data-ep="expenses_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/expenses/</span></div>
+      <div class="ep-item" onclick="showEp('expenses_create')" data-ep="expenses_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/expenses/</span></div>
+
+      <div class="ep-section">Breeding</div>
+      <div class="ep-item" onclick="showEp('breeding_list')" data-ep="breeding_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/breeding/</span></div>
+      <div class="ep-item" onclick="showEp('breeding_create')" data-ep="breeding_create"><span class="method-tag POST">POST</span><span class="ep-path">/api/breeding/</span></div>
+
+      <div class="ep-section">Stats</div>
+      <div class="ep-item" onclick="showEp('stats_dash')" data-ep="stats_dash"><span class="method-tag GET">GET</span><span class="ep-path">/api/stats/dashboard/</span></div>
+      <div class="ep-item" onclick="showEp('stats_pl')" data-ep="stats_pl"><span class="method-tag GET">GET</span><span class="ep-path">/api/stats/profit-loss/</span></div>
+      <div class="ep-item" onclick="showEp('stats_income')" data-ep="stats_income"><span class="method-tag GET">GET</span><span class="ep-path">/api/stats/monthly-income/</span></div>
+
+      <div class="ep-section">Weather (Public)</div>
+      <div class="ep-item" onclick="showEp('weather_current')" data-ep="weather_current"><span class="method-tag GET">GET</span><span class="ep-path">/api/weather/current/</span></div>
+      <div class="ep-item" onclick="showEp('weather_forecast')" data-ep="weather_forecast"><span class="method-tag GET">GET</span><span class="ep-path">/api/weather/forecast/</span></div>
+      <div class="ep-item" onclick="showEp('weather_tips')" data-ep="weather_tips"><span class="method-tag GET">GET</span><span class="ep-path">/api/weather/health-recommendations/</span></div>
+
+      <div class="ep-section">Notifications</div>
+      <div class="ep-item" onclick="showEp('notif_list')" data-ep="notif_list"><span class="method-tag GET">GET</span><span class="ep-path">/api/notifications/</span></div>
+      <div class="ep-item" onclick="showEp('notif_all_read')" data-ep="notif_all_read"><span class="method-tag POST">POST</span><span class="ep-path">/api/notifications/mark-all-read/</span></div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT: Detail + Try ══ -->
+  <div class="ep-detail" id="epDetail">
+    <!-- Content injected by JS -->
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  ENDPOINT DEFINITIONS
+// ══════════════════════════════════════════════════
+const ENDPOINTS = {
+
+  root: {
+    method: 'GET', path: '/api/', auth: false,
+    title: 'API Root',
+    desc: 'API ki sabhi links milti hain — login, docs, dashboard. Login ki zarurat nahi.',
+    params: [], body: null,
+    example: `GET /api/\n\n// Response:\n{\n  "message": "🐐 Goat Farm Management API — v5.4",\n  "links": {\n    "swagger_ui":   "/api/docs/",\n    "login":        "POST /api/auth/login/",\n    "dashboard":    "GET /api/stats/dashboard/"\n  }\n}`
+  },
+
+  login: {
+    method: 'POST', path: '/api/auth/login/', auth: false,
+    title: 'Login',
+    desc: 'Username aur password se login karo. Session cookie mil jaati hai jo baaki sab requests mein automatically jaati hai.',
+    params: [],
+    body: { username: 'admin', password: 'yourpassword' },
+    bodyFields: [
+      { name: 'username', type: 'text',     req: true,  desc: 'Django admin username' },
+      { name: 'password', type: 'password', req: true,  desc: 'Password' },
+    ],
+    example: `POST /api/auth/login/\n{\n  "username": "admin",\n  "password": "yourpassword"\n}\n\n// 200 Response:\n{ "access_token": "session-based", "token_type": "session", "username": "admin" }\n\n// 401 (galat password):\n{ "detail": "Invalid username ya password." }`
+  },
+
+  logout: {
+    method: 'POST', path: '/api/auth/logout/', auth: false,
+    title: 'Logout',
+    desc: 'Session destroy ho jaati hai.',
+    params: [], body: {},
+    example: `POST /api/auth/logout/\n// Response:\n{ "detail": "Logged out successfully." }`
+  },
+
+  me: {
+    method: 'GET', path: '/api/auth/me/', auth: true,
+    title: 'Meri Profile',
+    desc: 'Login kiye hue user ki jaankari milti hai.',
+    params: [], body: null,
+    example: `GET /api/auth/me/\n\n// Response:\n{\n  "id": 1,\n  "username": "admin",\n  "email": "admin@farm.com",\n  "is_staff": true\n}`
+  },
+
+  goats_list: {
+    method: 'GET', path: '/api/goats/', auth: true,
+    title: 'Goats List',
+    desc: 'Sabhi bkariyon ki list — search, status aur breed se filter kar sakte hain. Har page par 50 records.',
+    params: [
+      { name: 'page',   type: 'number', req: false, desc: 'Page number (default: 1)' },
+      { name: 'search', type: 'text',   req: false, desc: 'Tag number ya naam se search' },
+      { name: 'status', type: 'select', req: false, desc: 'A=Active, P=Pregnant, S=Sold, D=Dead', options: ['','A','P','S','D'] },
+      { name: 'breed',  type: 'text',   req: false, desc: 'boer, saanen, nubian, local, etc.' },
+    ], body: null,
+    example: `GET /api/goats/\nGET /api/goats/?search=kali&status=A\nGET /api/goats/?breed=boer&page=2\n\n// Response:\n{\n  "count": 24,\n  "items": [{\n    "id": 1, "tag_number": "G-001", "name": "Kali",\n    "breed": "boer", "gender": "F", "status": "A",\n    "age_months": 18, "age_years": 1, "weight": 32.5\n  }]\n}`
+  },
+
+  goats_create: {
+    method: 'POST', path: '/api/goats/', auth: true,
+    title: 'Nayi Bkari Add',
+    desc: 'Nai bkari ka record banao.',
+    params: [],
+    body: { tag_number: 'G-050', name: 'Lakshmi', breed: 'boer', gender: 'F', color: 'white', date_of_birth: '2023-06-15', weight: 28.5, purchase_date: '2023-08-01', purchase_price: 9500 },
+    bodyFields: [
+      { name: 'tag_number',     type: 'text',   req: true,  desc: 'Unique ID jaise G-050' },
+      { name: 'name',           type: 'text',   req: true,  desc: 'Bkari ka naam' },
+      { name: 'breed',          type: 'select', req: true,  desc: 'Nasl', options: ['boer','saanen','alpine','nubian','local'] },
+      { name: 'gender',         type: 'select', req: true,  desc: 'Ling', options: ['M','F'] },
+      { name: 'color',          type: 'text',   req: true,  desc: 'Rang' },
+      { name: 'date_of_birth',  type: 'date',   req: true,  desc: 'Janam ki tarikh' },
+      { name: 'weight',         type: 'number', req: true,  desc: 'Vajan (kg)' },
+      { name: 'purchase_date',  type: 'date',   req: true,  desc: 'Khareedne ki tarikh' },
+      { name: 'purchase_price', type: 'number', req: true,  desc: 'Khareedne ka mol (₹)' },
+      { name: 'status',         type: 'select', req: false, desc: 'Status (default: A)', options: ['A','P','S','D'] },
+    ],
+    example: `POST /api/goats/\n{\n  "tag_number": "G-050", "name": "Lakshmi",\n  "breed": "boer", "gender": "F", "color": "white",\n  "date_of_birth": "2023-06-15", "weight": 28.5,\n  "purchase_date": "2023-08-01", "purchase_price": 9500\n}`
+  },
+
+  goats_detail: {
+    method: 'GET', path: '/api/goats/{id}/', auth: true,
+    title: 'Bkari Detail',
+    desc: 'Ek bkari ki poori jaankari — ID se.',
+    params: [{ name: 'id', type: 'number', req: true, desc: 'Bkari ka ID' }],
+    body: null,
+    example: `GET /api/goats/5/`
+  },
+
+  goats_update: {
+    method: 'PUT', path: '/api/goats/{id}/', auth: true,
+    title: 'Bkari Update',
+    desc: 'Bkari ki jaankari update karo.',
+    params: [{ name: 'id', type: 'number', req: true, desc: 'Bkari ka ID' }],
+    body: { weight: 35.2, status: 'P' },
+    bodyFields: [
+      { name: 'weight', type: 'number', req: false, desc: 'Naya vajan (kg)' },
+      { name: 'status', type: 'select', req: false, desc: 'Naya status', options: ['A','P','S','D'] },
+    ],
+    example: `PUT /api/goats/5/\n{ "weight": 35.2, "status": "P" }`
+  },
+
+  goats_delete: {
+    method: 'DELETE', path: '/api/goats/{id}/', auth: true,
+    title: 'Bkari Delete',
+    desc: 'Bkari ka record hata do. Dhyan rakhein: related records bhi delete ho sakte hain.',
+    params: [{ name: 'id', type: 'number', req: true, desc: 'Bkari ka ID' }],
+    body: null,
+    example: `DELETE /api/goats/5/\n// Response:\n{ "deleted": true, "id": 5 }`
+  },
+
+  goats_stats: {
+    method: 'GET', path: '/api/goats/{id}/stats/', auth: true,
+    title: 'Bkari Performance Summary',
+    desc: 'Ek bkari ki poori performance — milk total, weight gain, health cost, breeding count, vaccination alerts.',
+    params: [{ name: 'id', type: 'number', req: true, desc: 'Bkari ka ID' }],
+    body: null,
+    example: `GET /api/goats/5/stats/\n\n// Response:\n{\n  "name": "Gauri", "age_months": 20,\n  "current_weight": 35.2, "weight_gain_kg": 6.7,\n  "total_milk_liters": 142.5,\n  "total_health_cost": 1200.0,\n  "breeding_count": 2, "kids_count": 3,\n  "is_insured": true,\n  "has_overdue_vaccination": false\n}`
+  },
+
+  health_list: {
+    method: 'GET', path: '/api/health/', auth: true,
+    title: 'Health Records List',
+    desc: 'Sabhi health records — goat ya type se filter kar sakte ho.',
+    params: [
+      { name: 'goat_id',     type: 'number', req: false, desc: 'Kisi ek bkari ke records' },
+      { name: 'record_type', type: 'select', req: false, desc: 'Type filter', options: ['','V','D','T','C','S'] },
+      { name: 'page',        type: 'number', req: false, desc: 'Page number' },
+    ], body: null, example: `GET /api/health/?goat_id=5\nGET /api/health/?record_type=V  // Sirf vaccinations`
+  },
+
+  health_create: {
+    method: 'POST', path: '/api/health/', auth: true,
+    title: 'Health Record Add',
+    desc: 'Naya health record — V=Vaccination, D=Deworming, T=Treatment, C=Checkup, S=Surgery.',
+    params: [],
+    body: { goat_id: 1, record_type: 'V', date: '2026-02-18', description: 'FMD Vaccination', medicine_used: 'FMD Vaccine', dosage: '2ml', cost: 150, veterinarian: 'Dr. Sharma' },
+    bodyFields: [
+      { name: 'goat_id',      type: 'number', req: true,  desc: 'Bkari ka ID' },
+      { name: 'record_type',  type: 'select', req: true,  desc: 'V/D/T/C/S', options: ['V','D','T','C','S'] },
+      { name: 'date',         type: 'date',   req: true,  desc: 'Tarikh' },
+      { name: 'description',  type: 'text',   req: true,  desc: 'Vivaran' },
+      { name: 'cost',         type: 'number', req: true,  desc: 'Kharch (₹)' },
+      { name: 'medicine_used',type: 'text',   req: false, desc: 'Dawa ka naam' },
+      { name: 'dosage',       type: 'text',   req: false, desc: 'Matra' },
+      { name: 'veterinarian', type: 'text',   req: false, desc: 'Doctor ka naam' },
+    ],
+    example: `POST /api/health/\n{\n  "goat_id": 1, "record_type": "V",\n  "date": "2026-02-18",\n  "description": "FMD Vaccination",\n  "cost": 150\n}`
+  },
+
+  milk_list: {
+    method: 'GET', path: '/api/milk/', auth: true,
+    title: 'Milk Records List',
+    desc: 'Doodh utpadan ke records.',
+    params: [
+      { name: 'goat_id', type: 'number', req: false, desc: 'Kisi ek bkari ke records' },
+      { name: 'page',    type: 'number', req: false, desc: 'Page number' },
+    ], body: null, example: `GET /api/milk/\nGET /api/milk/?goat_id=3`
+  },
+
+  milk_create: {
+    method: 'POST', path: '/api/milk/', auth: true,
+    title: 'Milk Record Add',
+    desc: 'Doodh ka naya record — Morning ya Evening session.',
+    params: [],
+    body: { goat_id: 1, date: '2026-02-18', session: 'M', quantity: 2.5, fat_percentage: 4.2 },
+    bodyFields: [
+      { name: 'goat_id',       type: 'number', req: true,  desc: 'Bkari ka ID' },
+      { name: 'date',          type: 'date',   req: true,  desc: 'Tarikh' },
+      { name: 'session',       type: 'select', req: true,  desc: 'Waqt', options: ['M','E'] },
+      { name: 'quantity',      type: 'number', req: true,  desc: 'Liter mein' },
+      { name: 'fat_percentage',type: 'number', req: false, desc: 'Fat % (optional)' },
+    ],
+    example: `POST /api/milk/\n{\n  "goat_id": 1,\n  "date": "2026-02-18",\n  "session": "M",  // M=Subah, E=Shaam\n  "quantity": 2.5\n}`
+  },
+
+  weight_list: {
+    method: 'GET', path: '/api/weight/', auth: true,
+    title: 'Weight Records List',
+    desc: 'Bkariyon ke vajan ke records.',
+    params: [{ name: 'goat_id', type: 'number', req: false, desc: 'Kisi ek bkari ke records' }],
+    body: null, example: `GET /api/weight/?goat_id=5`
+  },
+
+  weight_create: {
+    method: 'POST', path: '/api/weight/', auth: true,
+    title: 'Weight Record Add',
+    desc: 'Naya vajan record karo.',
+    params: [],
+    body: { goat_id: 1, date: '2026-02-18', weight: 35.5 },
+    bodyFields: [
+      { name: 'goat_id', type: 'number', req: true, desc: 'Bkari ka ID' },
+      { name: 'date',    type: 'date',   req: true, desc: 'Tarikh' },
+      { name: 'weight',  type: 'number', req: true, desc: 'Vajan (kg)' },
+    ],
+    example: `POST /api/weight/\n{ "goat_id": 1, "date": "2026-02-18", "weight": 35.5 }`
+  },
+
+  sales_list: {
+    method: 'GET', path: '/api/sales/', auth: true,
+    title: 'Sales List',
+    desc: 'Sabhi bikriyon ki list.',
+    params: [
+      { name: 'goat_id',       type: 'number', req: false, desc: 'Ek bkari ki sales' },
+      { name: 'payment_status',type: 'select', req: false, desc: 'P=Paid, UP=Unpaid, PA=Partial', options: ['','P','UP','PA'] },
+    ], body: null, example: `GET /api/sales/\nGET /api/sales/?payment_status=UP  // Sirf unpaid`
+  },
+
+  sales_create: {
+    method: 'POST', path: '/api/sales/', auth: true,
+    title: 'Sale Record Add',
+    desc: 'Naya sale — total_amount apne aap calculate hota hai (quantity × price_per_unit) ✨',
+    params: [],
+    body: { sale_type: 'M', date: '2026-02-18', quantity: 10, unit: 'liter', price_per_unit: 60, buyer_name: 'Ramesh Ji' },
+    bodyFields: [
+      { name: 'sale_type',     type: 'select', req: true,  desc: 'G=Goat, M=Milk, MN=Manure, O=Other', options: ['G','M','MN','O'] },
+      { name: 'date',          type: 'date',   req: true,  desc: 'Tarikh' },
+      { name: 'quantity',      type: 'number', req: true,  desc: 'Matra' },
+      { name: 'unit',          type: 'text',   req: true,  desc: 'Ikai jaise liter, kg, piece' },
+      { name: 'price_per_unit',type: 'number', req: true,  desc: 'Ek ikai ka daam (₹)' },
+      { name: 'buyer_name',    type: 'text',   req: true,  desc: 'Khareedaar ka naam' },
+      { name: 'goat_id',       type: 'number', req: false, desc: 'Sirf Goat sale ke liye' },
+      { name: 'payment_status',type: 'select', req: false, desc: 'P/UP/PA (default: P)', options: ['P','UP','PA'] },
+    ],
+    example: `POST /api/sales/\n{\n  "sale_type": "M",\n  "date": "2026-02-18",\n  "quantity": 10,\n  "unit": "liter",\n  "price_per_unit": 60,\n  "buyer_name": "Ramesh Ji"\n  // total_amount = 10×60 = ₹600 (auto!) ✨\n}`
+  },
+
+  expenses_list: {
+    method: 'GET', path: '/api/expenses/', auth: true,
+    title: 'Expenses List',
+    desc: 'Sabhi kharche — type aur date range se filter kar sakte ho.',
+    params: [
+      { name: 'expense_type', type: 'select', req: false, desc: 'Type', options: ['','F','M','V','R','U','L','O'] },
+      { name: 'date_from',    type: 'date',   req: false, desc: 'Is tarikh se' },
+      { name: 'date_to',      type: 'date',   req: false, desc: 'Is tarikh tak' },
+    ], body: null, example: `GET /api/expenses/?expense_type=F&date_from=2026-01-01`
+  },
+
+  expenses_create: {
+    method: 'POST', path: '/api/expenses/', auth: true,
+    title: 'Expense Add',
+    desc: 'Naya kharch record karo — F=Feed, M=Medicine, V=Veterinary, R=Repairs, U=Utilities, L=Labour, O=Other.',
+    params: [],
+    body: { date: '2026-02-18', expense_type: 'F', description: 'Hara chara kharida', amount: 2500, paid_to: 'Radhe Lal', payment_method: 'C' },
+    bodyFields: [
+      { name: 'date',           type: 'date',   req: true,  desc: 'Tarikh' },
+      { name: 'expense_type',   type: 'select', req: true,  desc: 'F/M/V/R/U/L/O', options: ['F','M','V','R','U','L','O'] },
+      { name: 'description',    type: 'text',   req: true,  desc: 'Vivaran' },
+      { name: 'amount',         type: 'number', req: true,  desc: 'Rashi (₹)' },
+      { name: 'paid_to',        type: 'text',   req: true,  desc: 'Kise diya' },
+      { name: 'payment_method', type: 'select', req: false, desc: 'C=Cash, B=Bank, CH=Cheque, O=UPI', options: ['C','B','CH','O'] },
+    ],
+    example: `POST /api/expenses/\n{\n  "date": "2026-02-18",\n  "expense_type": "F",\n  "description": "Hara chara kharida",\n  "amount": 2500,\n  "paid_to": "Radhe Lal"\n}`
+  },
+
+  breeding_list: {
+    method: 'GET', path: '/api/breeding/', auth: true,
+    title: 'Breeding Records',
+    desc: 'Sabhi prajanan records.',
+    params: [{ name: 'status', type: 'select', req: false, desc: 'P/C/F/D', options: ['','P','C','F','D'] }],
+    body: null, example: `GET /api/breeding/\nGET /api/breeding/?status=P  // Sirf pending`
+  },
+
+  breeding_create: {
+    method: 'POST', path: '/api/breeding/', auth: true,
+    title: 'Breeding Record Add',
+    desc: 'Naya prajanan record — expected_delivery_date optional hai, 150 din mein apne aap set ho jaati hai.',
+    params: [],
+    body: { mother_id: 2, father_id: 5, breeding_date: '2026-02-10', status: 'P' },
+    bodyFields: [
+      { name: 'mother_id',    type: 'number', req: true,  desc: 'Maa bkari ka ID (Female honi chahiye)' },
+      { name: 'father_id',    type: 'number', req: true,  desc: 'Baap bkari ka ID (Male hona chahiye)' },
+      { name: 'breeding_date',type: 'date',   req: true,  desc: 'Prajanan ki tarikh' },
+      { name: 'expected_delivery_date', type: 'date', req: false, desc: 'Auto = breeding_date + 150 din' },
+      { name: 'status',       type: 'select', req: false, desc: 'P/C/F/D (default: P)', options: ['P','C','F','D'] },
+      { name: 'notes',        type: 'text',   req: false, desc: 'Koi note' },
+    ],
+    example: `POST /api/breeding/\n{\n  "mother_id": 2, "father_id": 5,\n  "breeding_date": "2026-02-10"\n  // expected_delivery = 2026-07-10 (auto) ✨\n}`
+  },
+
+  stats_dash: {
+    method: 'GET', path: '/api/stats/dashboard/', auth: true,
+    title: 'Dashboard Stats',
+    desc: 'Farm ki poori summary — bkari count, revenue, profit, alerts sab ek jagah.',
+    params: [], body: null,
+    example: `GET /api/stats/dashboard/\n\n// Response:\n{\n  "total_goats": 45, "active_goats": 38,\n  "pregnant_goats": 5, "dead_goats": 1,\n  "total_revenue": 185000, "total_expenses": 92000,\n  "net_profit": 93000,\n  "this_month_revenue": 12000,\n  "this_month_profit": 6500,\n  "upcoming_vaccinations": 3,\n  "upcoming_deliveries": 2,\n  "overdue_tasks": 1,\n  "unpaid_sales": 2\n}`
+  },
+
+  stats_pl: {
+    method: 'GET', path: '/api/stats/profit-loss/', auth: true,
+    title: 'Monthly Profit & Loss',
+    desc: 'Kisi bhi mahine ka aay aur kharch ka hisaab.',
+    params: [
+      { name: 'year',  type: 'number', req: true, desc: 'Saal jaise 2026' },
+      { name: 'month', type: 'number', req: true, desc: '1–12' },
+    ], body: null,
+    example: `GET /api/stats/profit-loss/?year=2026&month=2\n\n// Response:\n{\n  "total_income": 18500, "total_expense": 7200,\n  "net_profit": 11300, "is_profitable": true\n}`
+  },
+
+  stats_income: {
+    method: 'GET', path: '/api/stats/monthly-income/', auth: true,
+    title: 'Monthly Income',
+    desc: 'Kisi mahine ki aay — sales + additional income alag alag.',
+    params: [
+      { name: 'year',  type: 'number', req: true, desc: 'Saal' },
+      { name: 'month', type: 'number', req: true, desc: '1–12' },
+    ], body: null,
+    example: `GET /api/stats/monthly-income/?year=2026&month=2`
+  },
+
+  weather_current: {
+    method: 'GET', path: '/api/weather/current/', auth: false,
+    title: 'Live Weather',
+    desc: 'Abhi ka mausam — bina login ke kaam karta hai. 15 minute cache.',
+    params: [
+      { name: 'lat', type: 'number', req: false, desc: 'Latitude (optional)' },
+      { name: 'lng', type: 'number', req: false, desc: 'Longitude (optional)' },
+    ], body: null,
+    example: `GET /api/weather/current/\nGET /api/weather/current/?lat=26.92&lng=75.82`
+  },
+
+  weather_forecast: {
+    method: 'GET', path: '/api/weather/forecast/', auth: false,
+    title: '7-Day Forecast',
+    desc: 'Agle 7 dino ka mausam.',
+    params: [{ name: 'days', type: 'number', req: false, desc: 'Kitne din (default: 7)' }],
+    body: null, example: `GET /api/weather/forecast/?days=5`
+  },
+
+  weather_tips: {
+    method: 'GET', path: '/api/weather/health-recommendations/', auth: false,
+    title: 'Goat Care Tips',
+    desc: 'Mausam ke hisaab se bkari dekhbhal ke tips.',
+    params: [], body: null,
+    example: `GET /api/weather/health-recommendations/\n\n// Response:\n{\n  "temperature": 38.2,\n  "recommendations": [\n    "🌡️ Garmi zyada — paani zyada pilaein",\n    "🏠 Dhoop mein mat chhodein 12–4 baje"\n  ]\n}`
+  },
+
+  notif_list: {
+    method: 'GET', path: '/api/notifications/', auth: true,
+    title: 'Notifications',
+    desc: 'Sabhi suchanaayen — sirf na padhi hui bhi dekh sakte ho.',
+    params: [{ name: 'unread_only', type: 'select', req: false, desc: 'Sirf na padhi hui', options: ['','true','false'] }],
+    body: null, example: `GET /api/notifications/\nGET /api/notifications/?unread_only=true`
+  },
+
+  notif_all_read: {
+    method: 'POST', path: '/api/notifications/mark-all-read/', auth: true,
+    title: 'Sab Read Mark Karo',
+    desc: 'Sabhi notifications ek click mein read mark ho jaati hain.',
+    params: [], body: {},
+    example: `POST /api/notifications/mark-all-read/\n// Response:\n{ "marked_read": 12 }`
+  },
+};
+
+// ══════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════
+function getCsrf() {
+  return document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1]||'';
+}
+
+function showEp(key) {
+  // Active state
+  document.querySelectorAll('.ep-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.ep === key);
+  });
+
+  const ep = ENDPOINTS[key];
+  if (!ep) return;
+
+  const mClass = ep.method;
+  const authChip = ep.auth
+    ? `<span class="auth-chip chip-lock">🔒 Login required</span>`
+    : `<span class="auth-chip chip-public">🌐 Public — login ki zarurat nahi</span>`;
+
+  // Build params table
+  let paramsHtml = '';
+  if (ep.params && ep.params.length) {
+    paramsHtml = `
+      <div class="s-label">Query Parameters</div>
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Type</th><th>Detail</th></tr>
+        ${ep.params.map(p=>`
+          <tr>
+            <td>${p.name}</td>
+            <td>${p.type}</td>
+            <td>${p.req?'<span class="req-badge">REQUIRED</span> ':'<span class="opt-badge">optional</span> '}${p.desc}</td>
+          </tr>`).join('')}
+      </table>`;
+  }
+
+  // Build body fields table
+  let bodyHtml = '';
+  if (ep.bodyFields && ep.bodyFields.length) {
+    bodyHtml = `
+      <div class="s-label">Request Body Fields</div>
+      <table class="param-table">
+        <tr><th>Field</th><th>Type</th><th>Detail</th></tr>
+        ${ep.bodyFields.map(f=>`
+          <tr>
+            <td>${f.name}</td>
+            <td>${f.type}</td>
+            <td>${f.req?'<span class="req-badge">REQUIRED</span> ':'<span class="opt-badge">optional</span> '}${f.desc}</td>
+          </tr>`).join('')}
+      </table>`;
+  }
+
+  // Build try inputs
+  let tryInputsHtml = '';
+
+  if (ep.params && ep.params.length) {
+    ep.params.forEach(p => {
+      const inputHtml = p.options
+        ? `<select class="try-select" id="ti_${p.name}">${p.options.map(o=>`<option>${o}</option>`).join('')}</select>`
+        : `<input class="try-input" type="${p.type||'text'}" id="ti_${p.name}" placeholder="${p.desc}">`;
+      tryInputsHtml += `<div class="try-row"><div class="try-label">${p.name}</div>${inputHtml}</div>`;
+    });
+  }
+
+  if (ep.bodyFields && ep.bodyFields.length) {
+    ep.bodyFields.forEach(f => {
+      const val = ep.body && ep.body[f.name] !== undefined ? ep.body[f.name] : '';
+      const inputHtml = f.options
+        ? `<select class="try-select" id="tb_${f.name}">${f.options.map(o=>`<option ${o==val?'selected':''}>${o}</option>`).join('')}</select>`
+        : `<input class="try-input" type="${f.type||'text'}" id="tb_${f.name}" value="${val}" placeholder="${f.desc}">`;
+      tryInputsHtml += `<div class="try-row"><div class="try-label">${f.name}</div>${inputHtml}</div>`;
+    });
+  } else if (ep.body && Object.keys(ep.body).length === 0 && ep.method !== 'GET') {
+    tryInputsHtml += `<div style="font-size:13px;color:var(--text-muted);">Body mein kuch nahi bhejni — seedha Execute dabao.</div>`;
+  }
+
+  // ID input for paths with {id}
+  const needsId = ep.path.includes('{id}');
+  if (needsId) {
+    tryInputsHtml = `<div class="try-row"><div class="try-label">ID</div><input class="try-input" type="number" id="ti_id" placeholder="Bkari ya record ka ID" value="1"></div>` + tryInputsHtml;
+  }
+
+  document.getElementById('epDetail').innerHTML = `
+    <div class="ep-hero">
+      <div class="ep-hero-method method-tag ${mClass}">${ep.method}</div>
+      <div class="ep-hero-path">${ep.path}</div>
+      <div class="ep-desc">${ep.desc}</div>
+      ${authChip}
+    </div>
+
+    ${paramsHtml}
+    ${bodyHtml}
+
+    <!-- TRY IT -->
+    <div class="s-label">▶ Live Try Karo</div>
+    <div class="try-panel">
+      <div class="try-head">
+        <h3>🧪 Is endpoint ko seedha try karo</h3>
+        <span style="font-size:12px;color:var(--text-dim);">Response neeche dikhega</span>
+      </div>
+      <div class="try-body">
+        ${tryInputsHtml}
+        <button class="try-btn" id="tryBtn" onclick="executeRequest('${key}')">
+          ▶ Execute
+        </button>
+        <div>
+          <div class="s-label" style="margin-top:0">Response</div>
+          <div class="status-line" id="statusLine"></div>
+          <div class="response-area" id="responseArea">Response yahan dikhega...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODE EXAMPLE -->
+    <div class="s-label" style="margin-top:24px;">Code Example</div>
+    <div class="code-ex" id="codeEx">
+      <button class="copy-code" onclick="copyEx()">Copy</button>
+      <pre style="margin:0">${ep.example}</pre>
+    </div>
+  `;
+}
+
+async function executeRequest(key) {
+  const ep = ENDPOINTS[key];
+  const btn = document.getElementById('tryBtn');
+  const respArea = document.getElementById('responseArea');
+  const statusLine = document.getElementById('statusLine');
+
+  btn.disabled = true;
+  btn.textContent = '⟳ Loading...';
+  respArea.textContent = 'Request bhej rahe hain...';
+  statusLine.textContent = '';
+
+  // Build URL
+  let url = ep.path;
+  const needsId = url.includes('{id}');
+  if (needsId) {
+    const idEl = document.getElementById('ti_id');
+    url = url.replace('{id}', idEl ? idEl.value || '1' : '1');
+  }
+
+  // Query params
+  if (ep.params && ep.params.length) {
+    const qp = new URLSearchParams();
+    ep.params.forEach(p => {
+      const el = document.getElementById(`ti_${p.name}`);
+      if (el && el.value) qp.set(p.name, el.value);
+    });
+    if (qp.toString()) url += '?' + qp.toString();
+  }
+
+  // Body
+  let body = null;
+  if (ep.bodyFields && ep.bodyFields.length) {
+    const obj = {};
+    ep.bodyFields.forEach(f => {
+      const el = document.getElementById(`tb_${f.name}`);
+      if (el && el.value !== '') {
+        obj[f.name] = (f.type === 'number') ? parseFloat(el.value) : el.value;
+      }
+    });
+    body = JSON.stringify(obj);
+  } else if (ep.body && Object.keys(ep.body).length === 0 && ep.method !== 'GET') {
+    body = '{}';
+  }
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (ep.method !== 'GET') headers['X-CSRFToken'] = getCsrf();
+
+  try {
+    const res = await fetch(url, {
+      method: ep.method,
+      headers,
+      body,
+      credentials: 'include'
+    });
+
+    const text = await res.text();
+    let formatted = text;
+    try { formatted = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+
+    statusLine.innerHTML = `<span class="${res.ok ? 'status-ok' : 'status-err'}">${res.ok ? '✅' : '❌'} HTTP ${res.status} ${res.statusText}</span>`;
+    respArea.textContent = formatted;
+  } catch (e) {
+    statusLine.innerHTML = `<span class="status-err">❌ Network Error</span>`;
+    respArea.textContent = e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Execute';
+}
+
+function copyEx() {
+  const pre = document.querySelector('#codeEx pre');
+  if (pre) navigator.clipboard.writeText(pre.textContent).then(() => {
+    const btn = document.querySelector('.copy-code');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function filterEndpoints(q) {
+  const lower = q.toLowerCase();
+  document.querySelectorAll('.ep-item').forEach(el => {
+    const path = el.querySelector('.ep-path')?.textContent || '';
+    el.style.display = (!q || path.toLowerCase().includes(lower)) ? '' : 'none';
+  });
+  document.querySelectorAll('.ep-section').forEach(el => {
+    const next = el.nextElementSibling;
+    el.style.display = (next && next.style.display !== 'none') ? '' : (q ? 'none' : '');
+  });
+}
+
+// Load first endpoint
+showEp('root');
+</script>
+{% endblock %}

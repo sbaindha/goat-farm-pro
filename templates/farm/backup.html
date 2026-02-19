@@ -1,0 +1,222 @@
+{% extends 'farm/base.html' %}
+{% block title %}Backup & Downloads — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>📦 बैकअप और डाउनलोड</span><span class='en-only'>📦 Backup & Downloads</span>{% endblock %}
+{% block page_sub %}<span class='hi-only'>फार्म डेटा सुरक्षित करें — JSON, ZIP या Excel में</span><span class='en-only'>Secure your farm data — JSON, ZIP or Excel</span>{% endblock %}
+{% block page_breadcrumb %}<span class='hi-only'>बैकअप</span><span class='en-only'>backup</span>{% endblock %}
+
+{% block extra_css %}
+.bk-download-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+.bk-card { border-radius:var(--radius); padding:22px 20px; display:flex; flex-direction:column; gap:14px; text-decoration:none; transition:transform .2s,box-shadow .2s; position:relative; overflow:hidden; }
+.bk-card:hover { transform:translateY(-3px); box-shadow:0 14px 36px rgba(0,0,0,.35); }
+.bk-card-json  { background:linear-gradient(145deg,#0d2b16,#1a5c2a); border:1px solid rgba(34,197,94,0.25); }
+.bk-card-zip   { background:linear-gradient(145deg,#0d1b3e,#1a3a8c); border:1px solid rgba(59,130,246,0.25); }
+.bk-card-excel { background:linear-gradient(145deg,#2d1206,#7c3010); border:1px solid rgba(245,158,11,0.25); }
+.bk-badge { display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:99px;padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.85);width:fit-content; }
+.bk-card-icon  { font-size:2.2rem; }
+.bk-card-title { font-size:1rem; font-weight:800; color:#fff; margin-bottom:4px; }
+.bk-card-desc  { font-size:0.78rem; color:rgba(255,255,255,.65); line-height:1.5; }
+.bk-card-foot  { display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.12);font-size:0.78rem;font-weight:600;color:rgba(255,255,255,.75); }
+
+.card-title { font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; padding:14px 16px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+
+.ex-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
+.ex-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; display:flex; flex-direction:column; gap:10px; transition:all var(--transition); position:relative; overflow:hidden; }
+.ex-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--primary); border-radius:3px 0 0 3px; opacity:0; transition:opacity var(--transition); }
+.ex-card:hover { border-color:var(--border-strong); transform:translateY(-2px); }
+.ex-card:hover::before { opacity:1; }
+.ex-ico  { font-size:1.4rem; margin-bottom:2px; }
+.ex-name { font-size:0.82rem; font-weight:700; color:var(--text); }
+.ex-cnt  { font-size:0.68rem; color:var(--text-dim); margin-top:2px; font-weight:500; font-family:'JetBrains Mono',monospace; }
+.ex-btn  { display:flex;align-items:center;justify-content:center;gap:5px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 0;font-size:0.75rem;font-weight:600;cursor:pointer;text-decoration:none;transition:background var(--transition);font-family:'Plus Jakarta Sans',sans-serif; }
+.ex-btn:hover { background:var(--primary-dark); }
+.ex-btn.danger { background:transparent; border:1px solid rgba(239,68,68,.35); color:var(--danger); }
+.ex-btn.danger:hover { background:var(--danger-glow); }
+
+.drop-zone { border:2px dashed var(--border-strong); border-radius:var(--radius); padding:40px 28px; text-align:center; cursor:pointer; background:var(--bg3); transition:all var(--transition); }
+.drop-zone:hover,.drop-zone.over { border-color:var(--primary); background:var(--primary-glow); }
+.drop-zone input[type=file] { display:none; }
+.dz-icon  { font-size:3rem; margin-bottom:10px; }
+.dz-title { font-size:1rem; font-weight:800; color:var(--text); margin-bottom:5px; }
+.dz-sub   { font-size:0.78rem; color:var(--text-muted); }
+.file-chip { display:none;align-items:center;gap:7px;background:var(--primary-glow);border:1px solid rgba(34,197,94,.25);color:var(--primary);padding:6px 14px;border-radius:99px;font-size:0.78rem;font-weight:600;margin:12px auto 0;width:fit-content; }
+
+.warn-box { display:flex;gap:10px;align-items:flex-start;background:var(--amber-glow);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-sm);padding:13px 16px;margin-bottom:16px;font-size:0.8rem;color:var(--amber);line-height:1.5; }
+
+.result-box { margin-top:14px; border-radius:var(--radius-sm); padding:13px 16px; font-size:0.82rem; display:none; font-weight:500; }
+.result-box.ok  { background:var(--primary-glow); border:1px solid rgba(34,197,94,.25); color:var(--primary); }
+.result-box.err { background:var(--danger-glow);  border:1px solid rgba(239,68,68,.25);  color:var(--danger); }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+.spin-icon { display:inline-block; animation:spin .8s linear infinite; }
+
+@media(max-width:680px){ .bk-download-grid{ grid-template-columns:1fr; } }
+{% endblock %}
+
+{% block content %}
+
+<!-- STATS -->
+<div class="stats-grid" style="margin-bottom:20px;">
+    <div class="stat-card green"><div class="stat-icon-wrap">🐐</div><div class="stat-value" id="s-goats">—</div><div class="stat-label">Goats</div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">💰</div><div class="stat-value" id="s-sales">—</div><div class="stat-label">Sales</div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">🥛</div><div class="stat-value" id="s-milk">—</div><div class="stat-label"><span class='hi-only'>दूध रिकॉर्ड</span><span class='en-only'>Milk Records</span></div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">🏥</div><div class="stat-value" id="s-health">—</div><div class="stat-label"><span class='hi-only'>स्वास्थ्य रिकॉर्ड</span><span class='en-only'>Health Records</span></div></div>
+</div>
+
+<!-- FULL BACKUP -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-title">📦 <span class='hi-only'>पूर्ण डेटा बैकअप</span><span class='en-only'>Full Data Backup</span></div>
+    <div style="padding:16px;">
+        <div class="bk-download-grid">
+            <a href="/backup/download/json/" class="bk-card bk-card-json">
+                <span class="bk-badge">⚡ <span class='hi-only'>अनुशंसित</span><span class='en-only'>Recommended</span></span>
+                <div class="bk-card-icon">📄</div>
+                <div><div class="bk-card-title">JSON Backup</div><div class="bk-card-desc"><span class='hi-only'>Machine-readable format। Restore के लिए perfect। सभी models included।</span><span class='en-only'>Machine-readable format. Perfect for restore. All models included.</span></div></div>
+                <div class="bk-card-foot"><span><span class='hi-only'>डाउनलोड करें</span><span class='en-only'>Download</span></span><span>↓</span></div>
+            </a>
+            <a href="/backup/download/zip/" class="bk-card bk-card-zip">
+                <span class="bk-badge">🏆 <span class='hi-only'>सर्वश्रेष्ठ विकल्प</span><span class='en-only'>Best Option</span></span>
+                <div class="bk-card-icon">📦</div>
+                <div><div class="bk-card-title">Complete ZIP</div><div class="bk-card-desc"><span class='hi-only'>JSON + Excel + README — सब एक ZIP में। Long-term storage के लिए।</span><span class='en-only'>JSON + Excel + README — all in one ZIP. For long-term storage.</span></div></div>
+                <div class="bk-card-foot"><span><span class='hi-only'>डाउनलोड करें</span><span class='en-only'>Download</span></span><span>↓</span></div>
+            </a>
+            <a href="/backup/download/excel/" class="bk-card bk-card-excel">
+                <span class="bk-badge">📊 13+ Sheets</span>
+                <div class="bk-card-icon">📊</div>
+                <div><div class="bk-card-title">Complete Excel</div><div class="bk-card-desc"><span class='hi-only'>सभी sheets एक workbook में — formatted, styled और print-ready।</span><span class='en-only'>All sheets in one workbook — formatted, styled and print-ready.</span></div></div>
+                <div class="bk-card-foot"><span><span class='hi-only'>डाउनलोड करें</span><span class='en-only'>Download</span></span><span>↓</span></div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- INDIVIDUAL EXCEL -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-title">📋 <span class='hi-only'>अलग Excel डाउनलोड</span><span class='en-only'>Individual Excel Downloads</span></div>
+    <div style="padding:16px;">
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+            <span class="badge badge-green">🐐 <span id="mp-goats">—</span> Goats</span>
+            <span class="badge badge-blue">🤝 <span id="mp-breeding">—</span> Breeding</span>
+            <span class="badge badge-pink">🏥 <span id="mp-health">—</span> Health</span>
+            <span class="badge badge-amber">🥛 <span id="mp-milk">—</span> Milk</span>
+            <span class="badge badge-green">💰 <span id="mp-sales">—</span> Sales</span>
+            <span class="badge badge-gray">💸 <span id="mp-expenses">—</span> Expenses</span>
+        </div>
+        <div class="ex-grid">
+            <div class="ex-card"><div class="ex-ico">🐐</div><div class="ex-name">Goats</div><div class="ex-cnt" id="c-goats">— records</div><a href="/backup/excel/goats/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">🤝</div><div class="ex-name">Breeding</div><div class="ex-cnt" id="c-breeding">— records</div><a href="/backup/excel/breeding/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">🏥</div><div class="ex-name">Health Records</div><div class="ex-cnt" id="c-health">— records</div><a href="/backup/excel/health/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">🥛</div><div class="ex-name">Milk Production</div><div class="ex-cnt" id="c-milk">— records</div><a href="/backup/excel/milk/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">💰</div><div class="ex-name">Sales</div><div class="ex-cnt" id="c-sales">— records</div><a href="/backup/excel/sales/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">💸</div><div class="ex-name">Expenses</div><div class="ex-cnt" id="c-expenses">— records</div><a href="/backup/excel/expenses/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">⚖️</div><div class="ex-name">Weight Records</div><div class="ex-cnt" id="c-weight">— records</div><a href="/backup/excel/weight/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">📋</div><div class="ex-name">Tasks</div><div class="ex-cnt" id="c-tasks">— records</div><a href="/backup/excel/tasks/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">💉</div><div class="ex-name">Vaccination</div><div class="ex-cnt" id="c-vaccination">— records</div><a href="/backup/excel/vaccination/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">🛡️</div><div class="ex-name">Insurance</div><div class="ex-cnt" id="c-insurance">— records</div><a href="/backup/excel/insurance/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">👥</div><div class="ex-name">Customers</div><div class="ex-cnt" id="c-customers">— records</div><a href="/backup/excel/customers/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">🌾</div><div class="ex-name">Feed Inventory</div><div class="ex-cnt" id="c-feed">— records</div><a href="/backup/excel/feed/" class="ex-btn">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+            <div class="ex-card"><div class="ex-ico">💀</div><div class="ex-name">Mortality</div><div class="ex-cnt" id="c-mortality">— records</div><a href="/backup/excel/mortality/" class="ex-btn danger">↓ <span class='hi-only'>डाउनलोड</span><span class='en-only'>Download</span></a></div>
+        </div>
+    </div>
+</div>
+
+<!-- RESTORE -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-title">🔄 <span class='hi-only'>बैकअप रिस्टोर</span><span class='en-only'>Backup Restore</span></div>
+    <div style="padding:16px;">
+        <div class="warn-box">
+            <span style="font-size:1.1rem;flex-shrink:0;">⚠️</span>
+            <span><strong><span class='hi-only'>ध्यान रखें:</span><span class='en-only'>Warning:</span></strong> <span class='hi-only'>Restore करने से <strong>सारा current data delete हो जाएगा</strong> और backup का data load होगा। पहले नया backup जरूर लें।</span><span class='en-only'>Restoring will <strong>delete all current data</strong> and load backup data. Take a new backup first.</span></span>
+        </div>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('backupFile').click()">
+            <input type="file" id="backupFile" accept=".json" onchange="fileSelected(this)">
+            <div class="dz-icon">📂</div>
+            <div class="dz-title"><span class='hi-only'>JSON file यहाँ drop करें या click करें</span><span class='en-only'>Drop JSON file here or click to browse</span></div>
+            <div class="dz-sub"><span class='hi-only'>सिर्फ .json backup files accept की जाएंगी</span><span class='en-only'>Only .json backup files accepted</span></div>
+            <div class="file-chip" id="fileChip">✅ <span id="fileName"></span></div>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:16px;">
+            <button class="btn btn-primary" id="restoreBtn" onclick="doRestore()" disabled style="opacity:0.5;">
+                <span id="spinEl" style="display:none" class="spin-icon">⟳</span>
+                🔄 <span class='hi-only'>रिस्टोर शुरू करें</span><span class='en-only'>Start Restore</span>
+            </button>
+        </div>
+        <div class="result-box" id="resultBox"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+async function loadStats() {
+    try {
+        const d = await fetch('/backup/stats/').then(r => r.json());
+        const $ = id => document.getElementById(id);
+        $('s-goats').textContent  = d.goats  ?? '—';
+        $('s-sales').textContent  = d.sales  ?? '—';
+        $('s-milk').textContent   = d.milk   ?? '—';
+        $('s-health').textContent = d.health ?? '—';
+        [['mp-goats',d.goats],['mp-breeding',d.breeding],['mp-health',d.health],
+         ['mp-milk',d.milk],['mp-sales',d.sales],['mp-expenses',d.expenses]
+        ].forEach(([id,v]) => { const el=$(id); if(el) el.textContent = v ?? '—'; });
+        [['c-goats',d.goats],['c-breeding',d.breeding],['c-health',d.health],
+         ['c-milk',d.milk],['c-sales',d.sales],['c-expenses',d.expenses],
+         ['c-weight',d.weight],['c-tasks',d.tasks],['c-vaccination',d.vaccination],
+         ['c-insurance',d.insurance],['c-customers',d.customers],['c-feed','—'],['c-mortality',d.mortality]
+        ].forEach(([id,v]) => { const el=$(id); if(el) el.textContent = (v ?? '—') + ' records'; });
+    } catch(e) { console.warn('Stats failed', e); }
+}
+loadStats();
+
+const zone = document.getElementById('dropZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if (f?.name.endsWith('.json')) { document.getElementById('backupFile').files = e.dataTransfer.files; showFile(f.name); }
+    else showResult('err', '❌ Sirf .json file accept hoti hai.');
+});
+
+function fileSelected(inp) { if (inp.files[0]) showFile(inp.files[0].name); }
+function showFile(name) {
+    document.getElementById('fileName').textContent = name;
+    document.getElementById('fileChip').style.display = 'flex';
+    const btn = document.getElementById('restoreBtn');
+    btn.disabled = false; btn.style.opacity = '1';
+}
+
+async function doRestore() {
+    if (!document.getElementById('backupFile').files.length) return;
+    if (!confirm('⚠️ Kya aap sure hain?\n\nSaara current data DELETE ho jaayega.\nOK = Haan, restore karo')) return;
+    const btn = document.getElementById('restoreBtn');
+    const sp  = document.getElementById('spinEl');
+    btn.disabled = true; btn.style.opacity = '0.6'; sp.style.display = 'inline-block';
+    const fd = new FormData();
+    fd.append('backup_file', document.getElementById('backupFile').files[0]);
+    try {
+        const d = await fetch('/backup/restore/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: fd
+        }).then(r => r.json());
+        if (d.success) {
+            const total = Object.values(d.results).reduce((a, v) => a + (v.restored || 0), 0);
+            showResult('ok', '✅ Restore safal! ' + total + ' records restore kiye. Reload ho raha hai...');
+            setTimeout(() => location.reload(), 3000);
+        } else {
+            showResult('err', '❌ Fail: ' + JSON.stringify(d));
+        }
+    } catch(e) {
+        showResult('err', '❌ Network error: ' + e.message);
+    } finally {
+        btn.disabled = false; btn.style.opacity = '1'; sp.style.display = 'none';
+    }
+}
+
+function showResult(type, msg) {
+    const b = document.getElementById('resultBox');
+    b.className = 'result-box ' + type;
+    b.textContent = msg;
+    b.style.display = msg ? 'block' : 'none';
+}
+{% endblock %}

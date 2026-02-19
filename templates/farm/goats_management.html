@@ -1,0 +1,732 @@
+{% extends 'farm/base.html' %}
+{% load static %}
+
+{% block title %}Goats Management — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>🐐 बकरियां</span><span class='en-only'>🐐 Goats</span>{% endblock %}
+{% block page_breadcrumb %}goat-farm / goat-farm / goats{% endblock %}
+{% block nav_goats %}active{% endblock %}
+
+{% block extra_css %}
+.goats-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.page-heading{font-size:1.35rem;font-weight:800;color:var(--text)}
+.page-sub{font-size:0.78rem;color:var(--text-muted);margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search-wrap{position:relative;min-width:200px;max-width:300px}
+.search-wrap input{width:100%;padding:9px 14px 9px 36px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;color:var(--text);font-family:inherit;font-size:0.83rem;outline:none;transition:border-color var(--transition)}
+.search-wrap input:focus{border-color:var(--primary)}
+.search-wrap input::placeholder{color:var(--text-dim)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;align-items:center}
+.filter-chip{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text-muted);font-size:0.75rem;font-weight:600;cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.filter-chip:hover,.filter-chip.active{border-color:var(--primary);color:var(--primary);background:var(--primary-glow)}
+.filter-chip.sold-chip.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.filter-chip.dead-chip.active{border-color:var(--danger);color:var(--danger);background:var(--danger-glow)}
+.filter-chip.preg-chip.active{border-color:var(--pink);color:var(--pink);background:var(--pink-glow)}
+.filter-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.stats-grid-8{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:24px}
+.mini-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 10px;text-align:center;position:relative;overflow:hidden;transition:all var(--transition)}
+.mini-stat:hover{transform:translateY(-2px);border-color:var(--border-strong)}
+.mini-stat-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.mini-stat.green .mini-stat-bar{background:var(--primary)}
+.mini-stat.blue .mini-stat-bar{background:var(--blue)}
+.mini-stat.pink .mini-stat-bar{background:var(--pink)}
+.mini-stat.amber .mini-stat-bar{background:var(--amber)}
+.mini-stat.red .mini-stat-bar{background:var(--danger)}
+.mini-stat.purple .mini-stat-bar{background:#a855f7}
+.mini-stat-icon{font-size:1.2rem;margin-bottom:5px}
+.mini-stat-val{font-size:1.4rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text);line-height:1}
+.mini-stat-label{font-size:0.6rem;color:var(--text-muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.view-toggle{display:flex;gap:6px}
+.view-btn{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text-dim);cursor:pointer;font-size:.85rem;transition:all var(--transition)}
+.view-btn.active{border-color:var(--primary);color:var(--primary);background:var(--primary-glow)}
+.goat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.goat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:all var(--transition);position:relative;overflow:hidden}
+.goat-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--primary);opacity:0;transition:opacity var(--transition)}
+.goat-card.status-S::before{background:var(--amber)}
+.goat-card.status-D::before{background:var(--danger)}
+.goat-card.status-P::before{background:var(--pink)}
+.goat-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.goat-card:hover::before{opacity:1}
+.goat-card.status-S{opacity:.75}
+.goat-card.status-D{opacity:.6}
+.goat-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.goat-tag{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:600;color:var(--text-dim);background:var(--bg3);padding:3px 8px;border-radius:4px;border:1px solid var(--border)}
+.goat-name-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.goat-name{font-size:1rem;font-weight:700;color:var(--text)}
+.goat-breed{font-size:.76rem;color:var(--text-muted);margin-bottom:12px}
+.goat-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.meta-item{background:var(--bg3);border-radius:6px;padding:7px 4px;text-align:center}
+.meta-val{font-size:.82rem;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace}
+.meta-lbl{font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
+.goat-notes-strip{font-size:.72rem;color:var(--text-muted);background:var(--bg3);border-radius:6px;padding:6px 8px;margin-bottom:10px;border-left:2px solid var(--primary)}
+.goat-actions{display:flex;gap:5px;flex-wrap:wrap}
+.goat-actions .btn{flex:1;justify-content:center;min-width:0}
+.goat-table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+.goat-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.goat-table th{background:var(--bg3);color:var(--text-muted);font-weight:600;padding:10px 14px;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+.goat-table td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.goat-table tbody tr:last-child td{border-bottom:none}
+.goat-table tbody tr:hover{background:var(--bg3)}
+.goat-table tbody tr.status-S td,.goat-table tbody tr.status-D td{opacity:.65}
+.modal-lg{max-width:680px!important}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-full{grid-column:1/-1}
+.form-section{font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:4px;grid-column:1/-1}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status-option{padding:14px;border-radius:var(--radius-sm);border:2px solid var(--border);cursor:pointer;text-align:center;transition:all var(--transition)}
+.status-option:hover,.status-option.selected{border-color:var(--primary);background:var(--primary-glow)}
+.status-option.sold:hover,.status-option.sold.selected{border-color:var(--amber);background:var(--amber-glow)}
+.status-option.dead:hover,.status-option.dead.selected{border-color:var(--danger);background:var(--danger-glow)}
+.status-option.pregnant:hover,.status-option.pregnant.selected{border-color:var(--pink);background:var(--pink-glow)}
+.status-option-icon{font-size:1.8rem;margin-bottom:6px}
+.status-option-label{font-size:.8rem;font-weight:700;color:var(--text)}
+.status-option-sub{font-size:.68rem;color:var(--text-muted);margin-top:2px}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--text-muted);font-size:.75rem}
+.detail-value{font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim);grid-column:1/-1}
+.empty-state-icon{font-size:3.5rem;margin-bottom:14px}
+.empty-state-text{font-size:1rem;font-weight:700;color:var(--text-muted);margin-bottom:6px}
+.empty-state-sub{font-size:.82rem;margin-bottom:20px}
+.sort-select{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.78rem;padding:6px 10px;outline:none;cursor:pointer}
+.result-info{font-size:.75rem;color:var(--text-muted);display:flex;align-items:center;gap:8px;margin-left:auto}
+.result-count{font-weight:700;color:var(--text)}
+@media(max-width:600px){.form-grid-3,.form-grid-2{grid-template-columns:1fr}.goat-meta{grid-template-columns:1fr 1fr}}
+{% endblock %}
+
+{% block content %}
+<!-- TOP BAR -->
+<div class="goats-topbar">
+    <div>
+        <div class="page-heading">🐐 <span class="hi-only">बकरियां प्रबंधन</span><span class="en-only">Goats Management</span></div>
+        <div class="page-sub"><span class="hi-only">अपनी पूरी झुंड प्रबंधित करें</span><span class="en-only">Manage your entire herd</span></div>
+    </div>
+    <div class="topbar-right">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search name, tag, breed..." oninput="applyFilters()">
+        </div>
+        <div class="view-toggle">
+            <button class="view-btn active" id="viewGrid" onclick="setView('grid')" title="Grid">⊞</button>
+            <button class="view-btn" id="viewTable" onclick="setView('table')" title="Table">☰</button>
+        </div>
+        <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+            <option value="newest">🕐 Newest</option>
+            <option value="oldest">🕐 Oldest</option>
+            <option value="name">🔤 Name A–Z</option>
+            <option value="weight_high">⬆ Heaviest</option>
+            <option value="weight_low">⬇ Lightest</option>
+            <option value="age_old">📅 Oldest Age</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddModal()">+ <span class="hi-only">बकरी जोड़ें</span><span class="en-only">Add Goat</span></button>
+    </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid-8">
+    <div class="mini-stat green"><div class="mini-stat-bar"></div><div class="mini-stat-icon">🐐</div><div class="mini-stat-val" id="sc-total">—</div><div class="mini-stat-label">Total</div></div>
+    <div class="mini-stat green"><div class="mini-stat-bar"></div><div class="mini-stat-icon">✅</div><div class="mini-stat-val" id="sc-active">—</div><div class="mini-stat-label">Active</div></div>
+    <div class="mini-stat blue"><div class="mini-stat-bar"></div><div class="mini-stat-icon">♂️</div><div class="mini-stat-val" id="sc-male">—</div><div class="mini-stat-label">Male</div></div>
+    <div class="mini-stat pink"><div class="mini-stat-bar"></div><div class="mini-stat-icon">♀️</div><div class="mini-stat-val" id="sc-female">—</div><div class="mini-stat-label">Female</div></div>
+    <div class="mini-stat purple"><div class="mini-stat-bar"></div><div class="mini-stat-icon">🤰</div><div class="mini-stat-val" id="sc-pregnant">—</div><div class="mini-stat-label">Pregnant</div></div>
+    <div class="mini-stat amber"><div class="mini-stat-bar"></div><div class="mini-stat-icon">💰</div><div class="mini-stat-val" id="sc-sold">—</div><div class="mini-stat-label">Sold</div></div>
+    <div class="mini-stat red"><div class="mini-stat-bar"></div><div class="mini-stat-icon">💀</div><div class="mini-stat-val" id="sc-dead">—</div><div class="mini-stat-label">Dead</div></div>
+    <div class="mini-stat blue"><div class="mini-stat-bar"></div><div class="mini-stat-icon">⚖️</div><div class="mini-stat-val" id="sc-avgw">—</div><div class="mini-stat-label">Avg.Wt</div></div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-row">
+    <span style="font-size:.72rem;color:var(--text-muted);font-weight:600;">Filter:</span>
+    <span class="filter-chip active" onclick="setFilter('all',this)">🐐 All</span>
+    <span class="filter-chip" onclick="setFilter('A',this)">✅ Active</span>
+    <span class="filter-chip preg-chip" onclick="setFilter('P',this)">🤰 Pregnant</span>
+    <span class="filter-chip sold-chip" onclick="setFilter('S',this)">💰 Sold</span>
+    <span class="filter-chip dead-chip" onclick="setFilter('D',this)">💀 Dead</span>
+    <div class="filter-sep"></div>
+    <span class="filter-chip" onclick="setFilter('M',this)">♂ Male</span>
+    <span class="filter-chip" onclick="setFilter('F',this)">♀ Female</span>
+    <div class="result-info">Showing <span class="result-count" id="resultCount">—</span> goats</div>
+</div>
+
+<!-- GRID VIEW -->
+<div class="goat-grid" id="goatGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+        Loading goats...
+    </div>
+</div>
+
+<!-- TABLE VIEW -->
+<div id="goatTableWrap" style="display:none;">
+    <div class="goat-table-wrap">
+        <table class="goat-table">
+            <thead><tr>
+                <th>Tag</th><th>Name</th><th>Breed</th><th>Gender</th>
+                <th>Age</th><th>Weight</th><th>Bought At</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="goatTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- ════════════ MODAL 1: ADD / EDIT ════════════ -->
+<div class="modal-overlay" id="goatModal">
+<div class="modal modal-lg">
+    <div class="modal-header">
+        <div class="modal-title" id="modalTitle">➕ Add New Goat</div>
+        <button class="modal-close" onclick="closeModal('goatModal')">✕</button>
+    </div>
+    <form id="goatForm" onsubmit="submitGoat(event)">
+        <input type="hidden" id="goatId">
+
+        <div class="form-grid-2" style="margin-bottom:16px;">
+            <div class="form-section">🐐 Basic Information</div>
+            <div class="form-group">
+                <label class="form-label">Tag Number *</label>
+                <input class="form-input" id="f-tag" placeholder="e.g. G001" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name *</label>
+                <input class="form-input" id="f-name" placeholder="Goat name" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Breed *</label>
+                <select class="form-select" id="f-breed" required>
+                    <option value="">— Select Breed —</option>
+                    <optgroup label="🌍 International">
+                        <option value="boer">Boer</option>
+                        <option value="saanen">Saanen</option>
+                        <option value="alpine">Alpine</option>
+                        <option value="nubian">Nubian</option>
+                        <option value="anglo_nubian">Anglo-Nubian</option>
+                        <option value="toggeneburg">Toggeneburg</option>
+                        <option value="chamois_colored">Chamois Colored</option>
+                        <option value="oberhasli">Oberhasli</option>
+                    </optgroup>
+                    <optgroup label="🇮🇳 Indian Breeds (भारतीय नस्लें)">
+                        <option value="sirohi">Sirohi (सिरोही)</option>
+                        <option value="barbari">Barbari (बरबरी)</option>
+                        <option value="jamunapari">Jamunapari (जमुनापारी)</option>
+                        <option value="beetal">Beetal (बीटल)</option>
+                        <option value="osmanabadi">Osmanabadi (उस्मानाबादी)</option>
+                        <option value="marwari">Marwari (मारवाड़ी)</option>
+                        <option value="kutchi">Kutchi (कच्छी)</option>
+                        <option value="zalawadi">Zalawadi (झालावाड़ी)</option>
+                        <option value="ganjam">Ganjam (गंजाम)</option>
+                        <option value="local">Local/Desi (देसी)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender *</label>
+                <select class="form-select" id="f-gender" required>
+                    <option value="M">♂ Male</option>
+                    <option value="F">♀ Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Color / Markings</label>
+                <input class="form-input" id="f-color" placeholder="e.g. White, Brown patches">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Current Status</label>
+                <select class="form-select" id="f-status">
+                    <option value="A">✅ Active</option>
+                    <option value="P">🤰 Pregnant</option>
+                    <option value="S">💰 Sold</option>
+                    <option value="D">💀 Dead</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid-3" style="margin-bottom:16px;">
+            <div class="form-section">📅 Dates, Weight & Purchase</div>
+            <div class="form-group">
+                <label class="form-label">Date of Birth *</label>
+                <input class="form-input" type="date" id="f-dob" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Current Weight (kg) *</label>
+                <input class="form-input" type="number" id="f-weight" placeholder="0.0" step="0.1" min="0" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Purchase Date *</label>
+                <input class="form-input" type="date" id="f-purchase_date" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Purchase Price (₹) *</label>
+                <input class="form-input" type="number" id="f-purchase_price" placeholder="0" min="0" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mother (optional)</label>
+                <select class="form-select" id="f-mother"><option value="">— None —</option></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Father (optional)</label>
+                <select class="form-select" id="f-father"><option value="">— None —</option></select>
+            </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom:16px;">
+            <div class="form-section">📝 Notes</div>
+            <div class="form-group form-full">
+                <label class="form-label">Additional Notes</label>
+                <textarea class="form-input" id="f-notes" rows="2" placeholder="Health history, special traits, feeding notes..."></textarea>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" class="btn btn-outline" onclick="closeModal('goatModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">💾 Save Goat</button>
+        </div>
+    </form>
+</div>
+</div>
+
+
+<!-- ════════════ MODAL 2: STATUS CHANGE ════════════ -->
+<div class="modal-overlay" id="statusModal">
+<div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+        <div class="modal-title">🔄 Change Status</div>
+        <button class="modal-close" onclick="closeModal('statusModal')">✕</button>
+    </div>
+    <input type="hidden" id="statusGoatId">
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:16px;">Goat: <strong id="statusGoatName" style="color:var(--text);"></strong></p>
+    <div class="status-grid">
+        <div class="status-option" onclick="selectStatus('A',this)">
+            <div class="status-option-icon">✅</div>
+            <div class="status-option-label">Active</div>
+            <div class="status-option-sub">Healthy, in herd</div>
+        </div>
+        <div class="status-option pregnant" onclick="selectStatus('P',this)">
+            <div class="status-option-icon">🤰</div>
+            <div class="status-option-label">Pregnant</div>
+            <div class="status-option-sub">Expecting kids</div>
+        </div>
+        <div class="status-option sold" onclick="selectStatus('S',this)">
+            <div class="status-option-icon">💰</div>
+            <div class="status-option-label">Sold</div>
+            <div class="status-option-sub">Sold to buyer</div>
+        </div>
+        <div class="status-option dead" onclick="selectStatus('D',this)">
+            <div class="status-option-icon">💀</div>
+            <div class="status-option-label">Dead</div>
+            <div class="status-option-sub">Deceased / lost</div>
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+        <button class="btn btn-outline" onclick="closeModal('statusModal')">Cancel</button>
+        <button class="btn btn-primary" id="statusSaveBtn" onclick="saveStatus()">✅ Update Status</button>
+    </div>
+</div>
+</div>
+
+
+<!-- ════════════ MODAL 3: DETAIL VIEW ════════════ -->
+<div class="modal-overlay" id="detailModal">
+<div class="modal modal-lg">
+    <div class="modal-header">
+        <div class="modal-title" id="detailTitle">🐐 Goat Detail</div>
+        <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div id="detailContent"></div>
+</div>
+</div>
+
+
+<!-- ════════════ MODAL 4: DELETE CONFIRM ════════════ -->
+<div class="modal-overlay" id="deleteModal">
+<div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+        <div class="modal-title" style="color:var(--danger);">🗑️ Confirm Delete</div>
+        <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:6px;">You are about to permanently delete:</p>
+    <p style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;" id="deleteGoatName"></p>
+    <div style="font-size:.78rem;color:var(--danger);background:var(--danger-glow);padding:10px 14px;border-radius:8px;margin-bottom:20px;border:1px solid rgba(239,68,68,.2);">
+        ⚠️ This will permanently delete the goat record. This cannot be undone.
+    </div>
+    <input type="hidden" id="deleteGoatId">
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">🗑️ Delete Forever</button>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+let allGoats = [], currentFilter = 'all', currentView = 'grid', selectedStatus = null;
+
+const BREED_MAP = {
+    boer:'Boer',saanen:'Saanen',alpine:'Alpine',nubian:'Nubian',anglo_nubian:'Anglo-Nubian',
+    toggeneburg:'Toggeneburg',oberhasli:'Oberhasli',chamois_colored:'Chamois Colored',
+    sirohi:'Sirohi',barbari:'Barbari',jamunapari:'Jamunapari',beetal:'Beetal',
+    osmanabadi:'Osmanabadi',marwari:'Marwari',kutchi:'Kutchi',zalawadi:'Zalawadi',
+    ganjam:'Ganjam',local:'Local/Desi'
+};
+const SBADGE = {A:'badge-green',P:'badge-pink',S:'badge-amber',D:'badge-red'};
+const SLABEL = {A:'Active',P:'Pregnant',S:'Sold',D:'Dead'};
+const SEMOJI = {A:'✅',P:'🤰',S:'💰',D:'💀'};
+
+// ── LOAD ──
+async function loadGoats() {
+    document.getElementById('goatGrid').innerHTML =
+        '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><div class="loading-dots"><span></span><span></span><span></span></div><br>Loading goats...</div>';
+    try {
+        const r = await fetch(API + '/goats/?page_size=2000');
+        const d = await r.json();
+        allGoats = d.items || d;
+        updateStats(allGoats);
+        populateParentDropdowns(allGoats);
+        applyFilters();
+    } catch(e) {
+        document.getElementById('goatGrid').innerHTML =
+            '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Could not load goats</div><div class="empty-state-sub">Check if server is running</div></div>';
+    }
+}
+
+// ── STATS ──
+function updateStats(g) {
+    const total = g.length;
+    document.getElementById('sc-total').textContent    = total;
+    document.getElementById('sc-active').textContent   = g.filter(x=>x.status==='A').length;
+    document.getElementById('sc-male').textContent     = g.filter(x=>x.gender==='M').length;
+    document.getElementById('sc-female').textContent   = g.filter(x=>x.gender==='F').length;
+    document.getElementById('sc-pregnant').textContent = g.filter(x=>x.status==='P').length;
+    document.getElementById('sc-sold').textContent     = g.filter(x=>x.status==='S').length;
+    document.getElementById('sc-dead').textContent     = g.filter(x=>x.status==='D').length;
+    const avg = total ? (g.reduce((s,x)=>s+(x.weight||0),0)/total).toFixed(1)+'kg' : '—';
+    document.getElementById('sc-avgw').textContent = avg;
+}
+
+// ── FILTER + SORT ──
+function setFilter(val, el) {
+    currentFilter = val;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    applyFilters();
+}
+
+function applyFilters() {
+    const q    = (document.getElementById('searchInput').value||'').toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+    let list   = [...allGoats];
+
+    if      (currentFilter==='M') list = list.filter(g=>g.gender==='M');
+    else if (currentFilter==='F') list = list.filter(g=>g.gender==='F');
+    else if (currentFilter!=='all') list = list.filter(g=>g.status===currentFilter);
+
+    if (q) list = list.filter(g =>
+        g.name.toLowerCase().includes(q) ||
+        g.tag_number.toLowerCase().includes(q) ||
+        (g.breed||'').toLowerCase().includes(q) ||
+        (g.color||'').toLowerCase().includes(q)
+    );
+
+    list.sort((a,b) => {
+        if (sort==='name')        return a.name.localeCompare(b.name);
+        if (sort==='weight_high') return b.weight - a.weight;
+        if (sort==='weight_low')  return a.weight - b.weight;
+        if (sort==='age_old')     return new Date(a.date_of_birth) - new Date(b.date_of_birth);
+        if (sort==='oldest')      return new Date(a.created_at||0) - new Date(b.created_at||0);
+        return new Date(b.created_at||0) - new Date(a.created_at||0);
+    });
+
+    document.getElementById('resultCount').textContent = list.length;
+    if (currentView==='grid') renderGrid(list);
+    else renderTable(list);
+}
+
+function ageStr(dob) {
+    const now = new Date(), b = new Date(dob);
+    const mo  = (now.getFullYear()-b.getFullYear())*12 + (now.getMonth()-b.getMonth());
+    return mo>=12 ? Math.floor(mo/12)+'yr '+(mo%12)+'mo' : mo+' mo';
+}
+
+// ── GRID ──
+function renderGrid(goats) {
+    const grid = document.getElementById('goatGrid');
+    grid.style.display = 'grid';
+    document.getElementById('goatTableWrap').style.display = 'none';
+
+    if (!goats.length) {
+        grid.innerHTML = `<div class="empty-state">
+            <div class="empty-state-icon">🐐</div>
+            <div class="empty-state-text">No goats found</div>
+            <div class="empty-state-sub">Try changing filters or add a new goat</div>
+            <button class="btn btn-primary" onclick="openAddModal()">+ Add First Goat</button>
+        </div>`; return;
+    }
+
+    grid.innerHTML = goats.map(g => {
+        const price  = g.purchase_price ? '₹'+Number(g.purchase_price).toLocaleString('en-IN') : '—';
+        const notesH = g.notes ? `<div class="goat-notes-strip">📝 ${g.notes}</div>` : '';
+        const gs     = JSON.stringify(g).replace(/'/g,"&#39;").replace(/"/g,'&quot;');
+        return `
+        <div class="goat-card status-${g.status}" id="card-${g.id}">
+            <div class="goat-card-top">
+                <span class="goat-tag">${g.tag_number}</span>
+                <span class="badge ${SBADGE[g.status]}">${SEMOJI[g.status]} ${SLABEL[g.status]}</span>
+            </div>
+            <div class="goat-name-row">
+                <span>${g.gender==='M'?'♂️':'♀️'}</span>
+                <span class="goat-name">${g.name}</span>
+            </div>
+            <div class="goat-breed">🌿 ${BREED_MAP[g.breed]||g.breed} &nbsp;·&nbsp; ${g.color||'—'}</div>
+            <div class="goat-meta">
+                <div class="meta-item"><div class="meta-val">${g.weight}kg</div><div class="meta-lbl">Weight</div></div>
+                <div class="meta-item"><div class="meta-val">${ageStr(g.date_of_birth)}</div><div class="meta-lbl">Age</div></div>
+                <div class="meta-item"><div class="meta-val" style="font-size:.7rem;">${price}</div><div class="meta-lbl">Bought</div></div>
+            </div>
+            ${notesH}
+            <div class="goat-actions">
+                <button class="btn btn-outline btn-sm" onclick='editGoatById(${g.id})'>✏️ Edit</button>
+                <button class="btn btn-outline btn-sm" onclick='statusGoatById(${g.id})'>🔄 Status</button>
+                <button class="btn btn-outline btn-sm" onclick='detailGoatById(${g.id})'>👁</button>
+                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${g.id},'${g.name.replace(/'/g,"\\'")}')">🗑️</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── TABLE ──
+function renderTable(goats) {
+    document.getElementById('goatGrid').style.display = 'none';
+    document.getElementById('goatTableWrap').style.display = 'block';
+    const tbody = document.getElementById('goatTableBody');
+    if (!goats.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">No goats found</td></tr>'; return;
+    }
+    tbody.innerHTML = goats.map(g => `
+        <tr class="status-${g.status}">
+            <td><span class="goat-tag">${g.tag_number}</span></td>
+            <td style="font-weight:600;">${g.gender==='M'?'♂️':'♀️'} ${g.name}</td>
+            <td>${BREED_MAP[g.breed]||g.breed}</td>
+            <td>${g.gender==='M'?'Male':'Female'}</td>
+            <td>${ageStr(g.date_of_birth)}</td>
+            <td>${g.weight} kg</td>
+            <td>₹${Number(g.purchase_price).toLocaleString('en-IN')}</td>
+            <td><span class="badge ${SBADGE[g.status]}">${SEMOJI[g.status]} ${SLABEL[g.status]}</span></td>
+            <td><div style="display:flex;gap:4px;">
+                <button class="btn btn-outline btn-sm" onclick="editGoatById(${g.id})">✏️</button>
+                <button class="btn btn-outline btn-sm" onclick="statusGoatById(${g.id})">🔄</button>
+                <button class="btn btn-outline btn-sm" onclick="detailGoatById(${g.id})">👁</button>
+                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${g.id},'${g.name.replace(/'/g,"\\'")}')">🗑️</button>
+            </div></td>
+        </tr>`).join('');
+}
+
+// ── VIEW ──
+function setView(v) {
+    currentView = v;
+    document.getElementById('viewGrid').classList.toggle('active', v==='grid');
+    document.getElementById('viewTable').classList.toggle('active', v==='table');
+    applyFilters();
+}
+
+// ── MODAL CLOSE ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+['goatModal','statusModal','detailModal','deleteModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
+
+// ── PARENT DROPDOWNS ──
+function populateParentDropdowns(goats) {
+    const f = goats.filter(g=>g.gender==='F');
+    const m = goats.filter(g=>g.gender==='M');
+    document.getElementById('f-mother').innerHTML = '<option value="">— None —</option>' +
+        f.map(g=>`<option value="${g.id}">${g.tag_number} — ${g.name}</option>`).join('');
+    document.getElementById('f-father').innerHTML = '<option value="">— None —</option>' +
+        m.map(g=>`<option value="${g.id}">${g.tag_number} — ${g.name}</option>`).join('');
+}
+
+// ── HELPERS TO GET GOAT BY ID ──
+function getGoat(id) { return allGoats.find(g=>g.id===id); }
+function editGoatById(id)   { const g=getGoat(id); if(g) openEditModal(g); }
+function statusGoatById(id) { const g=getGoat(id); if(g) openStatusModal(g); }
+function detailGoatById(id) { const g=getGoat(id); if(g) openDetailModal(g); }
+
+// ── ADD MODAL ──
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = '➕ Add New Goat';
+    document.getElementById('goatId').value = '';
+    document.getElementById('goatForm').reset();
+    document.getElementById('f-purchase_date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('goatModal').classList.add('open');
+}
+
+// ── EDIT MODAL ──
+function openEditModal(g) {
+    document.getElementById('modalTitle').textContent = '✏️ Edit: ' + g.name;
+    document.getElementById('goatId').value           = g.id;
+    document.getElementById('f-tag').value            = g.tag_number;
+    document.getElementById('f-name').value           = g.name;
+    document.getElementById('f-breed').value          = g.breed;
+    document.getElementById('f-gender').value         = g.gender;
+    document.getElementById('f-color').value          = g.color||'';
+    document.getElementById('f-weight').value         = g.weight;
+    document.getElementById('f-dob').value            = g.date_of_birth;
+    document.getElementById('f-purchase_date').value  = g.purchase_date;
+    document.getElementById('f-purchase_price').value = g.purchase_price;
+    document.getElementById('f-status').value         = g.status;
+    document.getElementById('f-notes').value          = g.notes||'';
+    document.getElementById('f-mother').value         = g.mother_id||'';
+    document.getElementById('f-father').value         = g.father_id||'';
+    document.getElementById('goatModal').classList.add('open');
+}
+
+// ── SUBMIT ──
+async function submitGoat(e) {
+    e.preventDefault();
+    const id  = document.getElementById('goatId').value;
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = '⏳ Saving...'; btn.disabled = true;
+
+    const payload = {
+        tag_number:     document.getElementById('f-tag').value.trim(),
+        name:           document.getElementById('f-name').value.trim(),
+        breed:          document.getElementById('f-breed').value,
+        gender:         document.getElementById('f-gender').value,
+        color:          document.getElementById('f-color').value.trim(),
+        weight:         parseFloat(document.getElementById('f-weight').value),
+        date_of_birth:  document.getElementById('f-dob').value,
+        purchase_date:  document.getElementById('f-purchase_date').value,
+        purchase_price: parseFloat(document.getElementById('f-purchase_price').value),
+        status:         document.getElementById('f-status').value,
+        notes:          document.getElementById('f-notes').value.trim(),
+        mother_id:      document.getElementById('f-mother').value ? parseInt(document.getElementById('f-mother').value) : null,
+        father_id:      document.getElementById('f-father').value ? parseInt(document.getElementById('f-father').value) : null,
+    };
+
+    try {
+        const res = await apiFetch(id ? `${API}/goats/${id}/` : `${API}/goats/`, id?'PUT':'POST', payload);
+        if (!res.ok) { const err=await res.json().catch(()=>({})); throw new Error(err.detail||JSON.stringify(err)); }
+        showToast(id ? '✅ Goat updated!' : '✅ Goat added!');
+        closeModal('goatModal');
+        loadGoats();
+    } catch(err) {
+        showToast('❌ '+err.message, 'error');
+    } finally {
+        btn.textContent = '💾 Save Goat'; btn.disabled = false;
+    }
+}
+
+// ── STATUS MODAL ──
+function openStatusModal(g) {
+    selectedStatus = g.status;
+    document.getElementById('statusGoatId').value = g.id;
+    document.getElementById('statusGoatName').textContent = g.name + ' (' + g.tag_number + ')';
+    const opts = document.querySelectorAll('.status-option');
+    opts.forEach(el=>el.classList.remove('selected'));
+    const idx = {A:0,P:1,S:2,D:3}[g.status];
+    if (opts[idx]) opts[idx].classList.add('selected');
+    document.getElementById('statusModal').classList.add('open');
+}
+
+function selectStatus(val, el) {
+    selectedStatus = val;
+    document.querySelectorAll('.status-option').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+}
+
+async function saveStatus() {
+    const id = document.getElementById('statusGoatId').value;
+    const btn = document.getElementById('statusSaveBtn');
+    if (!selectedStatus) { showToast('Please select a status','error'); return; }
+    btn.textContent='⏳ Updating...'; btn.disabled=true;
+    try {
+        const res = await apiFetch(`${API}/goats/${id}/`, 'PATCH', {status: selectedStatus});
+        if (!res.ok) throw new Error('Update failed');
+        showToast('✅ Status updated to ' + SLABEL[selectedStatus]);
+        closeModal('statusModal');
+        loadGoats();
+    } catch(e) {
+        showToast('❌ '+e.message,'error');
+    } finally {
+        btn.textContent='✅ Update Status'; btn.disabled=false;
+    }
+}
+
+// ── DETAIL MODAL ──
+function openDetailModal(g) {
+    document.getElementById('detailTitle').textContent = '🐐 ' + g.name + ' (' + g.tag_number + ')';
+    const mother = allGoats.find(x=>x.id===g.mother_id);
+    const father = allGoats.find(x=>x.id===g.father_id);
+
+    document.getElementById('detailContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:3.5rem;">${g.gender==='M'?'♂️':'♀️'}</div>
+        <div>
+            <div style="font-size:1.3rem;font-weight:800;color:var(--text);">${g.name}</div>
+            <div style="font-size:.8rem;color:var(--text-muted);">${BREED_MAP[g.breed]||g.breed} &nbsp;·&nbsp; ${g.color||'Unknown color'}</div>
+            <span class="badge ${SBADGE[g.status]}" style="margin-top:6px;display:inline-flex;">${SEMOJI[g.status]} ${SLABEL[g.status]}</span>
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+            <div style="font-size:.7rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Basic Info</div>
+            <div class="detail-row"><span class="detail-label">Tag Number</span><span class="detail-value">${g.tag_number}</span></div>
+            <div class="detail-row"><span class="detail-label">Gender</span><span class="detail-value">${g.gender==='M'?'♂ Male':'♀ Female'}</span></div>
+            <div class="detail-row"><span class="detail-label">Breed</span><span class="detail-value">${BREED_MAP[g.breed]||g.breed}</span></div>
+            <div class="detail-row"><span class="detail-label">Color</span><span class="detail-value">${g.color||'—'}</span></div>
+            <div class="detail-row"><span class="detail-label">Weight</span><span class="detail-value">${g.weight} kg</span></div>
+            <div class="detail-row"><span class="detail-label">Date of Birth</span><span class="detail-value">${g.date_of_birth}</span></div>
+            <div class="detail-row"><span class="detail-label">Age</span><span class="detail-value">${ageStr(g.date_of_birth)}</span></div>
+        </div>
+        <div>
+            <div style="font-size:.7rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">💰 Purchase Info</div>
+            <div class="detail-row"><span class="detail-label">Purchase Date</span><span class="detail-value">${g.purchase_date}</span></div>
+            <div class="detail-row"><span class="detail-label">Purchase Price</span><span class="detail-value">₹${Number(g.purchase_price).toLocaleString('en-IN')}</span></div>
+            <div class="detail-row"><span class="detail-label">Current Status</span><span class="detail-value">${SEMOJI[g.status]} ${SLABEL[g.status]}</span></div>
+            <div style="font-size:.7rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin:14px 0 10px;">👪 Lineage</div>
+            <div class="detail-row"><span class="detail-label">Mother</span><span class="detail-value">${mother?mother.name+' ('+mother.tag_number+')':'—'}</span></div>
+            <div class="detail-row"><span class="detail-label">Father</span><span class="detail-value">${father?father.name+' ('+father.tag_number+')':'—'}</span></div>
+        </div>
+    </div>
+    ${g.notes?`<div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--primary);">
+        <div style="font-size:.7rem;font-weight:700;color:var(--primary);margin-bottom:6px;">📝 NOTES</div>
+        <div style="font-size:.83rem;color:var(--text-muted);">${g.notes}</div>
+    </div>`:''}
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="statusGoatById(${g.id});closeModal('detailModal');">🔄 Change Status</button>
+        <button class="btn btn-outline" onclick="editGoatById(${g.id});closeModal('detailModal');">✏️ Edit</button>
+        <button class="btn btn-danger" onclick="openDeleteModal(${g.id},'${g.name.replace(/'/g,"\\'")}');closeModal('detailModal');">🗑️ Delete</button>
+    </div>`;
+    document.getElementById('detailModal').classList.add('open');
+}
+
+// ── DELETE MODAL ──
+function openDeleteModal(id, name) {
+    document.getElementById('deleteGoatId').value = id;
+    document.getElementById('deleteGoatName').textContent = name;
+    document.getElementById('deleteModal').classList.add('open');
+}
+
+async function confirmDelete() {
+    const id = document.getElementById('deleteGoatId').value;
+    try {
+        const res = await apiFetch(`${API}/goats/${id}/`, 'DELETE');
+        if (!res.ok) throw new Error('Delete failed');
+        showToast('🗑️ Goat deleted');
+        closeModal('deleteModal');
+        loadGoats();
+    } catch(e) { showToast('❌ '+e.message,'error'); }
+}
+
+// ── API FETCH (with CSRF) ──
+function apiFetch(url, method, body) {
+    return fetch(url, {
+        method,
+        headers: {'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+        body: body ? JSON.stringify(body) : undefined
+    });
+}
+
+window.addEventListener('DOMContentLoaded', loadGoats);
+{% endblock %}

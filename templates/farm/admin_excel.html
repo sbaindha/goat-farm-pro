@@ -1,0 +1,311 @@
+{% extends 'farm/base.html' %}
+{% load static %}
+
+{% block title %}Admin Excel Management{% endblock %}
+{% block page_title %}📊 Excel Download & Upload{% endblock %}
+{% block page_breadcrumb %}admin / excel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .excel-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .section {
+        margin-bottom: 40px;
+    }
+    
+    .section-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid var(--primary);
+        color: var(--text);
+    }
+    
+    .options-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .option-card {
+        background: var(--card);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .option-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+        background: var(--primary-glow);
+    }
+    
+    .option-card a {
+        text-decoration: none;
+        color: inherit;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .option-icon {
+        font-size: 40px;
+        line-height: 1;
+    }
+    
+    .option-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text);
+    }
+    
+    .upload-section {
+        background: var(--card);
+        border: 2px dashed var(--primary);
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+    }
+    
+    .upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .form-group {
+        width: 100%;
+        max-width: 500px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text);
+    }
+    
+    .form-group select,
+    .form-group input[type="file"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg3);
+        color: var(--text);
+        font-family: inherit;
+    }
+    
+    .form-group input[type="file"]::file-selector-button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    
+    .btn-submit {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-submit:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+    
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196F3;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        color: #1976D2;
+    }
+    
+    .warning-box {
+        background: #fff3e0;
+        border-left: 4px solid #FF9800;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        color: #E65100;
+    }
+    
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="excel-container">
+    
+    <!-- Admin Check Alert -->
+    <div class="info-box">
+        ℹ️ यह page केवल admin users के लिए है। Data को properly back up रखें।
+    </div>
+    
+    {% if messages %}
+    <div style="margin-bottom: 20px;">
+        {% for message in messages %}
+        <div style="padding: 12px 15px; margin-bottom: 10px; border-radius: 4px; 
+                    {% if message.tags %}background: 
+                    {% if 'error' in message.tags %}#ffebee; color: #c62828;{% else %}#e8f5e9; color: #2e7d32;{% endif %}
+                    {% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- ==================== DOWNLOADS SECTION ==================== -->
+    <div class="section">
+        <div class="section-title">📥 Data Download करें</div>
+        
+        <div class="info-box">
+            💡 यहाँ से अपना data Excel format में download कर सकते हो
+        </div>
+        
+        <div class="options-grid">
+            {% for option in download_options %}
+            <a href="{% url option.url %}" class="option-card">
+                <div class="option-icon">{{ option.icon }}</div>
+                <div class="option-name">{{ option.name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- ==================== UPLOADS SECTION ==================== -->
+    <div class="section">
+        <div class="section-title">📤 Excel से Data Import करें</div>
+        
+        <div class="warning-box">
+            ⚠️ Excel file सही format में होनी चाहिए। पहले download करके template देख लो।
+        </div>
+        
+        <div class="upload-section">
+            <form method="post" enctype="multipart/form-data" class="upload-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="model">कौन सा data import करना है?</label>
+                    <select name="model" id="model" required>
+                        <option value="">-- Select करो --</option>
+                        {% for option in import_options %}
+                        <option value="{{ option.model }}">{{ option.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="file">Excel File चुनो:</label>
+                    <input type="file" name="file" id="file" accept=".xlsx,.xls" required>
+                </div>
+                
+                <button type="submit" class="btn-submit">✅ Import करो</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- ==================== STATS SECTION ==================== -->
+    <div class="section">
+        <div class="section-title">📊 Database Statistics</div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_goats }}</div>
+                <div class="stat-label">कुल बकरियां</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ active_goats }}</div>
+                <div class="stat-label">Active बकरियां</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_health }}</div>
+                <div class="stat-label">Health Records</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_sales }}</div>
+                <div class="stat-label">Sales Records</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ==================== HELP SECTION ==================== -->
+    <div class="section">
+        <div class="section-title">❓ कैसे करें?</div>
+        
+        <div style="background: var(--bg3); padding: 20px; border-radius: 8px; line-height: 1.8;">
+            <h4 style="margin-top: 0;">📥 Download:</h4>
+            <p>1. ऊपर किसी option पर click करो</p>
+            <p>2. Excel file automatically download हो जाएगी</p>
+            <p>3. File को safely store करो (backup के लिए)</p>
+            
+            <h4>📤 Upload/Import:</h4>
+            <p>1. पहले "Download" करके template देख लो</p>
+            <p>2. File में data fill करो (सही format में)</p>
+            <p>3. Model select करो</p>
+            <p>4. File select करो</p>
+            <p>5. "Import करो" पर click करो</p>
+            
+            <h4>⚠️ Important:</h4>
+            <p>• Column headers exactly match करने चाहिए</p>
+            <p>• Dates DD-MM-YYYY format में होने चाहिए</p>
+            <p>• Numbers में special characters न हो</p>
+            <p>• Import से पहले backup ले लो</p>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

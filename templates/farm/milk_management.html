@@ -1,0 +1,108 @@
+{% extends 'farm/base.html' %}
+{% block title %}Milk Production — Goat Farm Pro{% endblock %}
+{% block page_title %}<span class='hi-only'>🥛 दूध उत्पादन</span><span class='en-only'>🥛 Milk Production</span>{% endblock %}
+{% block page_breadcrumb %}<span class='hi-only'>दूध</span><span class='en-only'>milk</span>{% endblock %}
+{% block nav_milk %}active{% endblock %}
+
+{% block page_sub %}<span class='hi-only'>सुबह और शाम का दूध लॉग</span><span class='en-only'>Morning & evening milk logs</span>{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="document.getElementById('milkModal').classList.add('open')">+ <span class='hi-only'>दूध लॉग करें</span><span class='en-only'>Log Milk</span></button>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:22px;">
+    <div class="stat-card green"><div class="stat-icon-wrap">🥛</div><div class="stat-value" id="sc-total">—</div><div class="stat-label"><span class="hi-only">कुल लीटर</span><span class="en-only">Total Litres</span></div></div>
+    <div class="stat-card blue"><div class="stat-icon-wrap">🌅</div><div class="stat-value" id="sc-morning">—</div><div class="stat-label"><span class="hi-only">सुबह</span><span class="en-only">Morning</span></div></div>
+    <div class="stat-card amber"><div class="stat-icon-wrap">🌆</div><div class="stat-value" id="sc-evening">—</div><div class="stat-label"><span class="hi-only">शाम</span><span class="en-only">Evening</span></div></div>
+    <div class="stat-card pink"><div class="stat-icon-wrap">📅</div><div class="stat-value" id="sc-records">—</div><div class="stat-label"><span class="hi-only">रिकॉर्ड</span><span class="en-only">Records</span></div></div>
+</div>
+
+<div class="card" style="padding:0;">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th><span class="hi-only">बकरी</span><span class="en-only">Goat</span></th><th><span class="hi-only">तारीख</span><span class="en-only">Date</span></th><th><span class="hi-only">समय</span><span class="en-only">Session</span></th><th><span class="hi-only">मात्रा (L)</span><span class="en-only">Quantity (L)</span></th><th><span class="hi-only">फैट %</span><span class="en-only">Fat %</span></th></tr></thead>
+            <tbody id="milkBody"><tr><td colspan="5" style="padding:30px;text-align:center;"><div class="loading-dots" style="display:inline-flex;gap:6px;"><span></span><span></span><span></span></div></td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="milkModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">🥛 Log Milk Production</div>
+            <button class="modal-close" onclick="document.getElementById('milkModal').classList.remove('open')">✕</button>
+        </div>
+        <form onsubmit="submitMilk(event)">
+            <div class="form-group"><label class="form-label">Goat ID *</label><input class="form-input" id="m-goat" type="number" required></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="m-date" required></div>
+                <div class="form-group"><label class="form-label">Session *</label>
+                    <select class="form-select" id="m-session">
+                        <option value="M">🌅 Morning</option><option value="E">🌆 Evening</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Quantity (litres) *</label><input class="form-input" type="number" id="m-qty" step="0.1" min="0" required></div>
+                <div class="form-group"><label class="form-label">Fat %</label><input class="form-input" type="number" id="m-fat" step="0.1" min="0" placeholder="Optional"></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('milkModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+const API = window.location.origin + '/api';
+
+function loadMilk() {
+    fetch(API + '/milk/')
+        .then(r => r.json())
+        .then(data => {
+            const total    = data.reduce((s, r) => s + r.quantity, 0);
+            const morning  = data.filter(r => r.session === 'M').reduce((s, r) => s + r.quantity, 0);
+            const evening  = data.filter(r => r.session === 'E').reduce((s, r) => s + r.quantity, 0);
+            document.getElementById('sc-total').textContent   = total.toFixed(1) + 'L';
+            document.getElementById('sc-morning').textContent = morning.toFixed(1) + 'L';
+            document.getElementById('sc-evening').textContent = evening.toFixed(1) + 'L';
+            document.getElementById('sc-records').textContent = data.length;
+            const tbody = document.getElementById('milkBody');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-dim);">No milk records yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(r => `<tr>
+                <td>🐐 #${r.goat_id}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">${r.date}</td>
+                <td><span class="badge ${r.session==='M'?'badge-amber':'badge-blue'}">${r.session==='M'?'🌅 Morning':'🌆 Evening'}</span></td>
+                <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">${r.quantity} L</td>
+                <td>${r.fat_percentage ? r.fat_percentage + '%' : '—'}</td>
+            </tr>`).join('');
+        })
+        .catch(() => { document.getElementById('milkBody').innerHTML = '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:20px;">Error loading</td></tr>'; });
+}
+
+async function submitMilk(e) {
+    e.preventDefault();
+    const payload = {
+        goat_id: parseInt(document.getElementById('m-goat').value),
+        date: document.getElementById('m-date').value,
+        session: document.getElementById('m-session').value,
+        quantity: parseFloat(document.getElementById('m-qty').value),
+        fat_percentage: parseFloat(document.getElementById('m-fat').value) || null,
+    };
+    try {
+        const res = await fetch(`${API}/milk/`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('✅ Milk record saved!');
+        document.getElementById('milkModal').classList.remove('open');
+        loadMilk();
+    } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+document.getElementById('milkModal').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('open'); });
+window.addEventListener('DOMContentLoaded', loadMilk);
+{% endblock %}
