@@ -9,9 +9,10 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=goat_farm.settings_production
+ENV DJANGO_SECRET_KEY=temporary-build-key
 
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
